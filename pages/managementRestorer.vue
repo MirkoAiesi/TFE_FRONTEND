@@ -1,25 +1,66 @@
-<script setup>
-import { ref } from "vue";
+<script lang="ts" setup>
+import { ref, watch } from "vue";
+import { definePageMeta } from '#imports';
+import { useRestaurantStore } from '../services/restaurantStore';
 
+definePageMeta({
+    middleware: 'info-restaurant'
+})
 const currentView = ref("orders");
 
 function setCurrentView(view) {
     currentView.value = view;
 }
-const restaurant = ref({
-    name: "Beaumongrill",
-    phoneNumber: "0123456789",
-    address: "123 Rue du Restaurant, Ville",
-    openingHours: "Mardi-Vendredi: 12h00-15h00 et 17h30-22h / Samedi-Dimanche: 12h00 - 23h00",
-    price: "€-€€",
-    cooking: "Française",
-    pet: "non",
-    terrace: "oui",
-    payement: "VISA, MASTERCARD, MAESTRO",
-    cultery: "35"
+const { restaurant } = useRestaurantStore();
 
+const animalAccepted = ref<string | null>(null);
+const terrace = ref<string | null>(null);
+const payments = ref<string[]>([]);
 
-})
+watch(
+    () => restaurant.value?.options,
+    (newOptions) => {
+        if (newOptions) {
+            const optionsArray = newOptions.split(',').map(option => option.trim());
+            animalAccepted.value = optionsArray[0] || null;
+            terrace.value = optionsArray[1] || null;
+            payments.value = optionsArray.slice(2) || [];
+        }
+    },
+    { immediate: true }
+);
+
+interface Schedule {
+    [day: string]: [string, string];
+}
+
+const parsedSchedule = computed<Schedule | null>(() => {
+    try {
+        if (!restaurant.value?.schedule) {
+            return null;
+        }
+        // Si le champ schedule est déjà un objet JSON, pas besoin de le parser à nouveau
+        return restaurant.value.schedule as Schedule;
+    } catch (e) {
+        console.error('Error parsing schedule:', e);
+        return null;
+    }
+});
+
+// Fonction pour capitaliser la première lettre du jour
+const capitalize = (str: string) => {
+    return str.charAt(0).toUpperCase() + str.slice(1);
+};
+const daysOrder = ['lundi', 'mardi', 'mercredi', 'jeudi', 'vendredi', 'samedi', 'dimanche'];
+const orderedSchedule = computed(() => {
+    if (!parsedSchedule.value) {
+        return [];
+    }
+
+    return daysOrder
+        .map(day => [day, parsedSchedule.value![day]])
+        .filter(([day, hours]) => hours);
+});
 </script>
 
 <template>
@@ -29,20 +70,27 @@ const restaurant = ref({
                 <div class="container userInfo">
                     <h3>Informations générales</h3>
                     <div class="mainInfo">
-                        <div>
-                            <p>{{ restaurant.name }}</p>
-                            <p>{{ restaurant.address }}</p>
-                            <p>{{ restaurant.phoneNumber }}</p>
-                            <p> Prix : {{ restaurant.price }}</p>
-                            <p> Cuisine : {{ restaurant.cooking }}</p>
-                            <p> Nombre de couverts : {{ restaurant.cultery }}</p>
+                        <div class="container-mainInfo">
+                            <p>{{ restaurant?.name }}</p>
+                            <p>{{ restaurant?.address }}</p>
+                            <p>{{ restaurant?.phone }}</p>
+                            <p> Prix : {{ restaurant?.price }}</p>
+                            <p> Cuisine : {{ restaurant?.cookingType }}</p>
+                            <p> Nombre de couverts : {{ restaurant?.cultery }}</p>
                         </div>
-                        <div>
+                        <div class="container-mainInfo">
                             <p>Inscrit le : 10:55 23-04-24</p>
-                            <p>{{ restaurant.openingHours }}</p>
-                            <p>Chien : {{ restaurant.pet }}</p>
-                            <p>Terrasse : {{ restaurant.terrace }}</p>
-                            <p>Payements autorisés : {{ restaurant.payement }}</p>
+                            <div class="info-row">
+                                <ul v-if="orderedSchedule.length">
+                                    <li v-for="([day, hours]) in orderedSchedule" :key="String(day)">
+                                        <strong>{{ capitalize(String(day)) }}:</strong> {{ hours[0] }} - {{ hours[1] }}
+                                    </li>
+                                </ul>
+                                <p v-else>Aucun horaire disponible.</p>
+                            </div>
+                            <p>Chien : {{ animalAccepted }}</p>
+                            <p>Terrasse : {{ terrace }}</p>
+                            <p>Payements autorisés : {{ payments.join(', ') }}</p>
                         </div>
                     </div>
                 </div>
@@ -51,6 +99,9 @@ const restaurant = ref({
                 <div class="container paramsSelection">
                     <p :class="{ activeParams: currentView === 'restorer' }" @click="setCurrentView('restorer')">
                         Réservations
+                    </p>
+                    <p :class="{ activeParams: currentView === 'history' }" @click="setCurrentView('history')">
+                        Historique des réservations
                     </p>
                     <p :class="{ activeParams: currentView === 'upload' }" @click="setCurrentView('upload')">
                         Ajouter des images
@@ -67,6 +118,7 @@ const restaurant = ref({
 
                 </div>
                 <BookingRestorer v-if="currentView === 'restorer'" />
+                <HistoryRestorer v-if="currentView === 'history'" />
                 <RestorerParams v-if="currentView === 'settings'" />
                 <Social v-if="currentView === 'social'" />
                 <UploadImg v-if="currentView === 'upload'" />
@@ -77,142 +129,10 @@ const restaurant = ref({
 </template>
 
 <style>
-.profile {
-    height: 110vh;
-    display: flex;
-    align-items: center;
-    flex-direction: column;
-}
-
-.center {
-    width: 100%;
-    max-width: 1100px;
-    height: 100%;
-}
-
-.profileHeader {
-    display: flex;
-    width: 100%;
-}
-
-section {
-    height: 60%;
-    display: flex;
-
-}
-
-.profileHeader .userInfo {
-    width: 100%;
-    display: flex;
-    flex-direction: column;
-    justify-content: space-between;
-    position: relative;
-}
-
-.profileHeader .userInfo h3 {
-    font-size: 24px;
-    font-weight: 500;
-    text-align: center;
-}
-
-.profileHeader p {
-    font-size: 18px;
-    margin-top: 10px;
-}
-
-.userInfo .mainInfo {
-    display: flex;
-}
-
-.mainInfo>div:nth-child(2) {
-    margin-left: 50px;
-}
-
-.paramsSelection {
-    display: flex;
-    flex-direction: column;
-    justify-content: start;
-    width: 35%;
-    height: 100%;
-}
-
-.paramsSelection p {
-    font-size: 16px;
-    margin: 5px;
-    cursor: pointer;
-    padding: 5px;
-    border-radius: 8px;
-}
-
-.paramsSelection .activeParams {
-    color: white;
-    background-color: #6e8b3d;
-}
-
-.paramsSelection p:hover {
-    color: white;
-    background-color: #6e8b3d;
-}
-
-.orders {
-    height: 100%;
-    width: 100%;
-    display: flex;
-    flex-direction: column;
-    justify-content: start;
-
-}
-
-.orders .title {
-    display: flex;
-    width: 100%;
-    margin-top: 20px;
-}
-
-.orders .title p {
-    width: 33%;
-    text-align: center;
-    font-size: 20px;
-    font-weight: 600;
-}
-
-.orders h3 {
-    font-size: 24px;
-    font-weight: 500;
-    text-align: center;
-}
-
-.orderList {
-    overflow-y: auto;
-    height: 100%;
-    scrollbar-color: gray lightgray;
-    scrollbar-width: thin;
-}
-
-.order {
-    display: flex;
-    cursor: pointer;
-    padding: 5px 0;
-    margin: 5px 0;
-    border-radius: 8px;
-}
-
-.order:hover {
-    background-color: #6e8b3d;
-    color: white;
-}
-
-.order p {
-    font-size: 18px;
-    width: 33%;
-    text-align: center;
-}
-
 .payement-container {
     display: flex;
     justify-content: center;
-    align-items: center;
-    margin-top: 15px;
+    margin: 10px;
 }
 
 .payement {
@@ -224,5 +144,24 @@ section {
     justify-content: space-between;
     align-items: center;
     text-align: center;
+}
+
+.info-row ul {
+    display: flex;
+    flex-wrap: wrap;
+    /* Si vous voulez qu'il passe à la ligne suivante quand il y a trop d'éléments */
+    list-style: none;
+    padding: 0;
+    margin: 0;
+}
+
+.info-row li {
+    margin-right: 10px;
+    font-size: 18px;
+}
+
+.info-row li.schedule-item {
+    margin: 10px;
+    /* Espace entre les éléments */
 }
 </style>

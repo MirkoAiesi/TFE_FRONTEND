@@ -1,40 +1,44 @@
 <script setup>
 import { ElMessage } from "element-plus";
 import { login } from "../../services/userService";
+import { useRouter } from 'vue-router';
+import { ref } from 'vue';
+
 const user = ref({
   email: '',
   password: ''
-})
+});
+
+const router = useRouter();
 
 const onSubmit = async () => {
   try {
-    if (user.email !== "" && user.password !== "") {
+    if (user.value.email !== "" && user.value.password !== "") {
       await login(user.value);
       ElMessage({
-        message: 'Connexion réussite !',
+        message: 'Connexion réussie !',
         type: "success",
         grouping: true,
         showClose: true
-      })
-      await navigateTo('/');
+      });
+      router.push('/');
     } else {
       ElMessage({
-        message: "Merci de rentrer toute les informations requises.",
+        message: "Merci de rentrer toutes les informations requises.",
         type: "error",
         grouping: true,
         showClose: true
-      })
+      });
     }
   } catch (e) {
     ElMessage({
-      message: e,
+      message: e.message,
       type: "error",
       grouping: true,
       showClose: true
-    })
+    });
   }
-
-}
+};
 </script>
 
 <template>
@@ -43,7 +47,7 @@ const onSubmit = async () => {
       <h2>CONNEXION</h2>
       <h3>Quel plaisir de vous revoir !</h3>
       <NuxtLink to="../auth/register">
-        <p>Vous n'avez pas de compte cliqué ici</p>
+        <p>Vous n'avez pas de compte ? Cliquez ici</p>
       </NuxtLink>
     </div>
     <div class="register-container">
@@ -69,6 +73,7 @@ const onSubmit = async () => {
     </div>
   </div>
 </template>
+
 
 <style scoped>
 .register-page {

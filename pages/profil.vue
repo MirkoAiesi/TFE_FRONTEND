@@ -1,11 +1,10 @@
 <script setup>
 import { ref, onMounted, watch } from "vue";
 import Cookies from "js-cookie";
-import { useRouter } from "vue-router";
 import { fetchUserInfo } from "../services/userService"; // Assurez-vous que ce chemin est correct
 import eventBus from '../services/eventBus'; // Importez l'EventBus
 
-const router = useRouter();
+
 const currentView = ref("orders");
 
 function setCurrentView(view) {
@@ -14,7 +13,7 @@ function setCurrentView(view) {
 
 const disconnect = () => {
     Cookies.remove('authBR');
-    router.push('/auth/login');
+    navigateTo('/auth/login');
 }
 
 const userInfo = ref({
@@ -55,9 +54,6 @@ onMounted(() => {
     <div class="profile">
         <div class="center">
             <div class="profileHeader">
-                <div class="container">
-                    <img src="" alt="profile image" />
-                </div>
                 <div class="container userInfo">
                     <h3>Informations générales</h3>
                     <div class="mainInfo">
@@ -70,7 +66,7 @@ onMounted(() => {
                             <p>Inscrit le: {{ formatDate(userInfo.createdAt) }}</p>
                         </div>
                     </div>
-                    <NuxtLink v-if="userInfo.id === 2" class="adminButton" to="../admin">
+                    <NuxtLink v-if="userInfo.id === 1" class="adminButton" to="../admin">
                         <el-button type="primary" round>Administration</el-button>
                     </NuxtLink>
                     <el-button @click="disconnect" class="disconnect" type="danger" size="large"
@@ -85,12 +81,15 @@ onMounted(() => {
                         Historique des réservations</p>
                     <p :class="{ activeParams: currentView === 'comment' }" @click="setCurrentView('comment')">
                         Historique des commentaires</p>
+                    <p :class="{ activeParams: reward === 'comment' }" @click="setCurrentView('reward')">
+                        Points de fidelité</p>
                     <p :class="{ activeParams: currentView === 'settings' }" @click="setCurrentView('settings')">
                         Paramètres</p>
                 </div>
                 <BookingList v-if="currentView === 'orders'" />
                 <HistoryList v-if="currentView === 'history'" />
                 <HistoryComment v-if="currentView === 'comment'" />
+                <RewardUser v-if="currentView === 'reward'" />
                 <UserParams v-if="currentView === 'settings'" />
             </section>
         </div>
@@ -99,7 +98,7 @@ onMounted(() => {
 
 <style>
 .profile {
-    height: 100vh;
+    height: 140vh;
     display: flex;
     align-items: center;
     flex-direction: column;
@@ -162,6 +161,7 @@ section {
 .profileHeader p {
     font-size: 18px;
     margin-top: 10px;
+    margin-bottom: 10px;
 }
 
 .userInfo .mainInfo {
@@ -220,7 +220,7 @@ section {
 }
 
 .orders h3 {
-    font-size: 24px;
+    font-size: 20px;
     font-weight: 500;
     text-align: center;
 }
@@ -255,5 +255,117 @@ section {
     position: absolute;
     top: 25px;
     left: 25px;
+}
+
+@media (max-width: 868px) {
+    .profile {
+        height: auto;
+        padding: 10px;
+    }
+
+    .center {
+        max-width: 100%;
+        padding: 0 10px;
+    }
+
+    .profileHeader {
+        flex-direction: column;
+        align-items: center;
+    }
+
+    .profileHeader .userInfo {
+        align-items: center;
+        width: 80%;
+    }
+
+    .profileHeader .userInfo h3 {
+        font-size: 16px;
+    }
+
+    .profileHeader p {
+        font-size: 12px;
+    }
+
+    .userInfo .mainInfo {
+
+        align-items: center;
+    }
+
+    .mainInfo>div:nth-child(2) {
+        margin-left: 8px;
+        margin-top: 10px;
+        margin-bottom: 55px;
+    }
+
+    .paramsSelection {
+        display: flex;
+        flex-direction: row;
+        justify-content: center;
+        flex-wrap: wrap;
+        width: 90%;
+        margin: 15px auto;
+        padding: 10px;
+    }
+
+    .paramsSelection p {
+        font-size: 12px;
+        padding: 5px 5px;
+        text-align: center;
+        flex: 1 1 100px;
+        box-sizing: border-box;
+        margin: 5px;
+        word-break: break-word;
+
+    }
+
+    section {
+        flex-direction: column;
+        height: auto;
+        padding: 0 10px;
+        /* Ajouté pour éviter que les bords ne touchent la fenêtre */
+    }
+
+    .orders {
+        width: 90%;
+        /* Ajusté pour éviter que les bords ne touchent la fenêtre */
+        margin: 0 auto;
+        margin-bottom: 30px;
+        /* Ajouté pour centrer l'élément */
+    }
+
+    .orders .title {
+        flex-direction: column;
+        align-items: center;
+    }
+
+    .orders .title p {
+        width: 100%;
+        margin: 10px 0;
+    }
+
+    .container {
+        padding: 20px;
+    }
+
+    .disconnect {
+        width: 21%;
+        font-size: 8px;
+        right: 25px;
+        bottom: 10px;
+    }
+
+    h4 {
+        font-size: 14px;
+    }
+
+    .el-table .cell {
+        font-size: 12px;
+        padding: 5px;
+    }
+
+    .el-dialog {
+        width: 300px;
+    }
+
 }
 </style>

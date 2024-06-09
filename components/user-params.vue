@@ -1,11 +1,15 @@
-<script setup>
-import { ref, onMounted } from "vue";
-import { modifyUserProfile, modifyUserPassword, fetchUserInfo } from "../services/userService"; // Assurez-vous que ce chemin est correct
+<script lang="ts" setup>
+import { ref, watch, onMounted } from 'vue';
+import { modifyUserProfile, modifyUserPassword, fetchUserInfo } from '../services/userService'; // Assurez-vous que ce chemin est correct
 import eventBus from '../services/eventBus'; // Importez l'EventBus
+import { ElMessage } from 'element-plus'; // Importez ElMessage pour afficher les messages d'erreur
 
 const firstName = ref('');
 const lastName = ref('');
 const email = ref('');
+const currentPassword = ref('');
+const newPassword = ref('');
+const confirmPassword = ref('');
 
 const loadUserInfo = async () => {
     try {
@@ -30,18 +34,84 @@ const updateProfile = async () => {
         console.error('Failed to update profile:', error);
     }
 };
+
+const isValidPassword = (password: string): boolean => {
+    const passwordRegex = /^(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$/;
+    return passwordRegex.test(password);
+};
+
 const updatePassword = async () => {
     console.log('updatePassword called');
+    if (!isValidPassword(newPassword.value)) {
+        ElMessage({
+            type: 'error',
+            showClose: true,
+            grouping: true,
+            message: 'Le mot de passe doit contenir au moins 8 caractères, dont une majuscule, un chiffre et un caractère spécial.',
+        });
+        return;
+    }
+    if (newPassword.value !== confirmPassword.value) {
+        ElMessage({
+            type: 'error',
+            showClose: true,
+            grouping: true,
+            message: 'Le nouveau mot de passe et la confirmation ne correspondent pas.',
+        });
+        return;
+    }
     try {
         await modifyUserPassword(currentPassword.value, newPassword.value, confirmPassword.value);
         console.log('Password updated successfully');
+        ElMessage({
+            type: 'success',
+            message: 'Mot de passe modifié avec succès.',
+        });
         currentPassword.value = '';
         newPassword.value = '';
         confirmPassword.value = '';
     } catch (error) {
         console.error('Failed to update password:', error);
+        ElMessage({
+            type: 'error',
+            showClose: true,
+            grouping: true,
+            message: 'Échec de la mise à jour du mot de passe. Vérifiez votre mot de passe actuel.',
+        });
     }
 };
+
+// Watchers pour nettoyer les entrées utilisateur en temps réel
+const nameRegex = /^[a-zA-ZÀ-ÿ\s'-]*$/;
+
+watch(firstName, (newValue, oldValue) => {
+    if (!nameRegex.test(newValue)) {
+        firstName.value = oldValue;
+        nextTick(() => {
+            ElMessage({
+                type: 'error',
+                showClose: true,
+                grouping: true,
+                message: 'Veuillez rentrer des caractères valides.',
+            });
+        });
+    }
+});
+
+watch(lastName, (newValue, oldValue) => {
+    if (!nameRegex.test(newValue)) {
+        lastName.value = oldValue;
+        nextTick(() => {
+            ElMessage({
+                type: 'error',
+                showClose: true,
+                grouping: true,
+                message: 'Veuillez rentrer des caractères valides.',
+            });
+        });
+    }
+});
+
 onMounted(() => {
     loadUserInfo();
 });
@@ -66,7 +136,7 @@ onMounted(() => {
                 @click="updateProfile">Modifier</el-button>
         </form>
         <el-divider />
-         <form @submit.prevent="updatePassword" class="passwordParams">
+        <form @submit.prevent="updatePassword" class="passwordParams">
             <h3>Sécurité</h3>
             <div>
                 <div>
@@ -82,7 +152,8 @@ onMounted(() => {
                     <input type="password" v-model="confirmPassword" name="confirmPassword" id="confirmPassword" />
                 </div>
             </div>
-            <el-button size="large" class="paramsButton" type="primary" round>Modifier</el-button>
+            <el-button size="large" class="paramsButton" type="primary" round
+                @click="updatePassword">Modifier</el-button>
         </form>
         <el-divider />
         <div class="paramsOptions">
@@ -129,5 +200,24 @@ form input {
 .paramsOptions {
     display: flex;
     justify-content: space-between;
+}
+
+@media (max-width: 868px) {
+    .orders h3 {
+        font-size: 16px;
+    }
+
+    form div {
+        flex-direction: column;
+    }
+
+    form label {
+        font-size: 14px;
+    }
+
+    .paramsButton {
+        width: 40%;
+        font-size: 10px;
+    }
 }
 </style>

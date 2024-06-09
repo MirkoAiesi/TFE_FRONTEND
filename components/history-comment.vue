@@ -47,7 +47,7 @@ const truncateReview = (review: string) => {
 </script>
 <template>
     <div class="container orders">
-        <h4 style="margin-top:15px;">Modération des commentaires </h4>
+        <h4 style="margin-top:15px;">Consultation des commentaires </h4>
         <el-table :data="filterTableData" style="width: 100%">
             <el-table-column label="Restaurant" prop="resto" />
             <el-table-column label="étoiles" prop="star" />

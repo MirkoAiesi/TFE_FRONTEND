@@ -1,4 +1,6 @@
 <script lang="ts" setup>
+import { ref, watch, nextTick } from 'vue';
+import { ElMessage } from 'element-plus';
 const days = ref(['Lundi', 'Mardi', 'Mercredi', 'Jeudi', 'Vendredi', 'Samedi', 'Dimanche']);
 const selectedDays = ref([false, false, false, false, false, false, false]);
 const openingHours = ref(['', '', '', '', '', '', '']);
@@ -10,6 +12,66 @@ const toggleDay = (index: number) => {
         closingHours.value[index] = '';
     }
 };
+const restaurantName = ref('');
+const address = ref('');
+const phone = ref('');
+
+const isBreak = ref(false);
+const breakTime = ref(['', '']);
+const vacancy = ref(false);
+const vacancyTime = ref(['', '']);
+
+const restoRegex = /^[a-zA-ZÀ-ÿ0-9\s'-]*$/;
+
+watch(restaurantName, (newValue, oldValue) => {
+    if (!restoRegex.test(newValue)) {
+        restaurantName.value = oldValue;
+        nextTick(() => {
+            ElMessage({
+                type: 'error',
+                showClose: true,
+                grouping: true,
+                message: 'Veuillez rentrer des caractères valides.',
+            });
+        });
+    }
+});
+const addressRegex = /^[a-zA-ZÀ-ÿ0-9\s,'.-]*$/;
+watch(address, (newValue, oldValue) => {
+    if (!addressRegex.test(newValue)) {
+        address.value = oldValue;
+        nextTick(() => {
+            ElMessage({
+                type: 'error',
+                showClose: true,
+                grouping: true,
+                message: 'Veuillez rentrer des caractères valides.',
+            });
+        });
+    }
+});
+const phoneRegex = /^\d{9,10}$/;
+
+const validateInput = (event: Event) => {
+    const input = event.target as HTMLInputElement;
+    let cleanedValue = input.value.replace(/\D/g, '');
+    if (cleanedValue.length > 10) {
+        cleanedValue = cleanedValue.slice(0, 10);
+    }
+    if (phoneRegex.test(cleanedValue) && cleanedValue !== '' && input.value.length >= 11) {
+        nextTick(() => {
+            ElMessage({
+                type: 'error',
+                showClose: true,
+                grouping: true,
+                message: 'Veuillez entrer un numéro de téléphone belge valide (9 à 10 chiffres).',
+            });
+        });
+
+    }
+    phone.value = cleanedValue;
+};
+
 </script>
 <template>
     <div class="container orders">
@@ -18,12 +80,12 @@ const toggleDay = (index: number) => {
             <form>
                 <div>
                     <div>
-                        <label for="firstname">Restaurant</label>
-                        <input type="text" name="firstname" id="lastname" />
-                        <label for="lastname">Adresse</label>
-                        <input type="text" name="lastname" id="lastname" />
-                        <label for="lastname">Téléphone</label>
-                        <input type="text" name="phone" id="phone" />
+                        <label for="restaurantName">Restaurant</label>
+                        <input type="text" v-model="restaurantName" name="restaurantName" id="restaurantName" />
+                        <label for="address">Adresse</label>
+                        <input type="text" v-model="address" name="address" id="address" />
+                        <label for="phone">Téléphone</label>
+                        <input type="text" v-model="phone" @input="validateInput" name="phone" id="phone" />
                     </div>
                     <div>
                         <div class="checkbox">
@@ -52,27 +114,34 @@ const toggleDay = (index: number) => {
                     <input type="time" v-model="openingHours[index]" :disabled="!selectedDays[index]">
                     <input type="time" v-model="closingHours[index]" :disabled="!selectedDays[index]">
                 </div>
+                <div class="date-btn">
+                    <el-button size="large" class="paramsButton" type="primary" round>Modifier</el-button>
+                </div>
+            </div>
+            <el-divider />
+            <div class="register-break">
+                <label>Changement de coupure entre vos services ? <input type="checkbox" name="break"
+                        v-model="isBreak"></label>
+                <input v-if="isBreak" style="width: 100px; margin:5px; text-align: center" type="time"
+                    v-model="breakTime[0]">
+                <input v-if="isBreak" style="width: 100px; margin:5px; text-align: center" type="time"
+                    v-model="breakTime[1]">
+                <label v-if="isBreak"> Plus de coupure entre vos services ?<input v-if="isBreak" type="checkbox"
+                        name="noCut"></label>
+                <label>Changement de période de vacances ? <input type="checkbox" name="vacancy"
+                        v-model="vacancy"></label>
+                <label v-if="vacancy">Du</label><input v-if="vacancy"
+                    style="width: 120px; margin:5px; text-align: center; padding:5px" type="date"
+                    v-model="vacancyTime[0]">
+                <label v-if="vacancy">Au</label><input v-if="vacancy"
+                    style="width: 120px; margin:5px; text-align: center; padding:5px" type="date"
+                    v-model="vacancyTime[1]">
+                <label v-if="vacancy"> Plus de vacances ?<input v-if="vacancy" type="checkbox" name="noVacancy"></label>
                 <el-button size="large" class="paramsButton" type="primary" round>Modifier</el-button>
             </div>
-
-            <el-divider />
-            <form class="passwordParams">
-                <h3>Sécurité</h3>
-                <div>
-                    <div>
-                        <label for="password">Mot de passe</label>
-                        <input type="text" name="password" id="password" />
-                    </div>
-                    <div>
-                        <label for="confirm">Confirmer</label>
-                        <input type="text" name="confirm" id="confirm" />
-                    </div>
-                </div>
-                <el-button size="large" class="paramsButton" type="primary" round>Modifier</el-button>
-            </form>
             <el-divider />
             <div class="paramsOptions">
-                <el-button size="large" class="paramsButton" type="danger" round>Supprimer le compte</el-button>
+                <el-button size="large" class="paramsButton" type="danger" round>Supprimer le restaurant</el-button>
             </div>
         </div>
     </div>
@@ -156,5 +225,56 @@ form input[type=checkbox] {
     text-align: center;
     margin: 5px;
     width: 100px;
+}
+
+.register-break {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+
+}
+
+.register-break label {
+    margin-bottom: 10px;
+    text-align: center;
+}
+
+
+@media (max-width: 868px) {
+    form div {
+        flex-direction: column;
+    }
+
+    form input[type=text] {
+        width: 200px;
+    }
+
+    .orders h3 {
+        font-size: 16px;
+    }
+
+    form label {
+        font-size: 14px;
+        margin: 10px;
+    }
+
+    .paramsButton {
+        width: 40%;
+        font-size: 10px;
+    }
+
+    .register-date {
+        display: block;
+    }
+
+    .date-btn {
+        display: flex;
+        justify-content: center;
+    }
+
+    .register-break label {
+        font-size: 14px;
+
+    }
 }
 </style>

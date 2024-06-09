@@ -1,140 +1,155 @@
 <script lang="ts" setup>
-import { ref, computed } from 'vue'
+import { ref, onMounted, computed } from 'vue';
+import { fetchBookingsByUser, fetchUserInfo, updateBookingStatusByUser } from '../services/userService';
 
-const dialogVisible = ref(false)
-const popup = () => {
-
-    dialogVisible.value = true
-
-};
-const cancelBooking = ref(false)
-const cancel = () => {
-
-    cancelBooking.value = true
-
-};
-const reservationDate = ref("21/04/2024")
-const numberOfPersons = ref('2')
-const arrivalTime = ref('12:00')
-interface User {
-    date: string
-    resto: string
-    hour: string
-    number: string
+interface BookingInfo {
+    id: number;
+    restaurantId: number;
+    date_time: Date | string | null;
+    comment: Record<string, any>;
+    number_people: string;
+    userId: number;
+    status: number;
 }
 
-const search = ref('')
-const filterTableData = computed(() =>
-    tableData.filter(
-        (data) =>
-            !search.value ||
-            data.resto.toLowerCase().includes(search.value.toLowerCase())
-    )
-)
+const bookingInfo = ref<BookingInfo[]>([]);
+const dialogVisible = ref(false);
+const selectedBookingToCancel = ref<BookingInfo | null>(null);
+const userId = ref<number | null>(null);
 
-const tableData: User[] = [
-    {
-        date: '2016-05-03',
-        resto: 'Tom',
-        hour: '12h',
-        number: '2 personnes',
-    },
-    {
-        date: '2016-05-02',
-        resto: 'John',
-        hour: '12h',
-        number: '2 personnes',
-    },
-    {
-        date: '2016-05-04',
-        resto: 'Morgan',
-        hour: '12h',
-        number: '2 personnes',
-    },
-    {
-        date: '2016-05-01',
-        resto: 'Jessy',
-        hour: '12h',
-        number: '2 personnes',
-    },
-    {
-        date: '2016-05-03',
-        resto: 'Tom',
-        hour: '12h',
-        number: '2 personnes',
-    },
-    {
-        date: '2016-05-02',
-        resto: 'John',
-        hour: '12h',
-        number: '2 personnes',
-    },
-    {
-        date: '2016-05-04',
-        resto: 'Morgan',
-        hour: '12h',
-        number: '2 personnes',
-    },
-    {
-        date: '2016-05-01',
-        resto: 'Jessy',
-        hour: '12h',
-        number: '2 personnes',
-    },
-]
+const loadBookingInfo = async (id: number) => {
+    try {
+        const data = await fetchBookingsByUser(id);
+        bookingInfo.value = normalizeBookingInfo(data);
+    } catch (error) {
+        console.error('Failed to load booking info:', error);
+    }
+};
+
+const normalizeBookingInfo = (data: any[]): BookingInfo[] => {
+    return data.map(booking => ({
+        ...booking,
+        date_time: booking.date_time || booking.dateTime || null,
+        number_people: booking.number_people || booking.numberPeople,
+        comment: typeof booking.comment === 'string' ? JSON.parse(booking.comment) : booking.comment,
+    }));
+};
+
+onMounted(async () => {
+    try {
+        const user = await fetchUserInfo();
+        userId.value = user.id;
+        if (userId.value) {
+            await loadBookingInfo(userId.value);
+        }
+    } catch (error) {
+        console.error('Failed to fetch authenticated user:', error);
+    }
+});
+
+const pendingBookings = computed(() => {
+    return bookingInfo.value.filter(booking => booking.status === 0);
+});
+
+const confirmedBookings = computed(() => {
+    return bookingInfo.value.filter(booking => booking.status === 1 || booking.status === 2);
+});
+
+const formatBookingData = (bookings: BookingInfo[]): (BookingInfo & { date: string; time: string })[] => {
+    return bookings.map(booking => {
+        if (!booking.date_time) {
+            return {
+                ...booking,
+                date: '',
+                time: '',
+            };
+        }
+
+        const dateTime = typeof booking.date_time === 'string' ? new Date(booking.date_time) : booking.date_time;
+        const isoString = dateTime.toISOString();
+        return {
+            ...booking,
+            date: isoString.slice(0, 10),
+            time: isoString.slice(11, 19),
+        };
+    });
+};
+
+const formattedPendingBookings = computed(() => {
+    return formatBookingData(pendingBookings.value);
+});
+
+const formattedConfirmedBookings = computed(() => {
+    return formatBookingData(confirmedBookings.value);
+});
+
+const popup = (booking: BookingInfo) => {
+    selectedBookingToCancel.value = booking;
+    dialogVisible.value = true;
+};
+
+const cancel = async () => {
+    if (selectedBookingToCancel.value) {
+        console.log('Attempting to cancel booking with ID:', selectedBookingToCancel.value.id, 'for restaurant ID:', selectedBookingToCancel.value.restaurantId);
+
+        try {
+            const response = await updateBookingStatusByUser(selectedBookingToCancel.value.id, 2);
+            console.log('Response from updateBookingStatusByUser:', response);
+
+            // Update the status locally only if the API call was successful
+            selectedBookingToCancel.value.status = 2;
+            dialogVisible.value = false;
+
+            if (userId.value) {
+                await loadBookingInfo(userId.value);
+            }
+        } catch (error) {
+            console.error('Error confirming booking:', error);
+        }
+    } else {
+        console.log('No booking selected for cancellation');
+    }
+};
 </script>
 
 <template>
     <div class="container orders">
         <h4>Reservation(s) en attente </h4>
-        <el-table :data="filterTableData" style="width: 100%">
-            <el-table-column label="Date" prop="date" />
-            <el-table-column label="Heure" prop="hour" />
-            <el-table-column label="Restaurant" prop="resto" />
-            <el-table-column label="Couverts" prop="number" />
-            <el-table-column align="right">
-            </el-table-column>
+        <el-table :data="formattedPendingBookings" style="width: 100%">
+            <el-table-column label="Date (aaaa/mm/jj)" prop="date" />
+            <el-table-column label="Heure" prop="time" />
+            <el-table-column label="Restaurant" prop="restaurantId" />
+            <el-table-column label="Couverts" prop="number_people" />
         </el-table>
+
         <h4 style="margin-top:15px;">Reservation(s) confirmée(s) </h4>
-        <el-table :data="filterTableData" style="width: 100%">
+        <el-table :data="formattedConfirmedBookings" style="width: 100%">
             <el-table-column label="Date" prop="date" />
-            <el-table-column label="Heure" prop="hour" />
-            <el-table-column label="Restaurant" prop="resto" />
-            <el-table-column label="Couverts" prop="number" />
+            <el-table-column label="Heure" prop="time" />
+            <el-table-column label="Restaurant" prop="restaurantId" />
+            <el-table-column label="Couverts" prop="number_people" />
             <el-table-column align="right">
                 <template #default="scope">
-                    <el-button size="small" type="danger" @click=cancel()>
-                        Annuler
-                    </el-button>
+                    <template v-if="scope.row.status === 2">
+                        <span class="cancelled-message">Annuler</span>
+                    </template>
+                    <template v-else>
+                        <el-button size="small" type="danger" @click="popup(scope.row)">
+                            Annuler
+                        </el-button>
+                    </template>
                 </template>
             </el-table-column>
         </el-table>
-        <el-dialog v-model="dialogVisible" title="Tips" width="500">
-            <p>Résumé de la réservation : {{ numberOfPersons }} personne(s) | {{ reservationDate }} | {{ arrivalTime }}
-            </p>
-            <label><input type="checkbox" name="option1"> Terrasse</label> <br>
-            <label><input type="checkbox" name="option2"> Chien</label>
-            <p>Demande(s) particulière(s)</p>
-            <textarea style="resize:none; width: 100%; height: 50px;"></textarea>
+
+        <el-dialog v-model="dialogVisible" width="500">
+            <h3 style="font-size: 22px;"> Êtes-vous sur d'annuler la réservation ? </h3>
             <template #footer>
                 <div class="dialog-footer">
                     <el-button type="danger" @click="dialogVisible = false">
                         Refuser
                     </el-button>
-                    <el-button type="primary" @click="dialogVisible = false">
-                        Confirmer
-                    </el-button>
-                </div>
-            </template>
-        </el-dialog>
-        <el-dialog v-model="cancelBooking" width="500">
-            <h3 style="font-size: 22px;"> Êtes-vous sur d'annuler la réservation ? </h3>
-            <template #footer>
-                <div class="dialog-footer">
-                    <el-button type="danger" @click="cancelBooking = false">
-                        Refuser
-                    </el-button>
-                    <el-button type="primary" @click="cancelBooking = false">
+                    <el-button type="primary" @click="cancel">
                         Confirmer
                     </el-button>
                 </div>
@@ -142,3 +157,9 @@ const tableData: User[] = [
         </el-dialog>
     </div>
 </template>
+<style scoped>
+.cancelled-message {
+    color: red;
+    font-weight: bold;
+}
+</style>

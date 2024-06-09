@@ -3,9 +3,6 @@ import { Avatar, Menu } from "@element-plus/icons-vue";
 import { ref } from "vue";
 import Cookies from "js-cookie";
 
-const isOpen = ref(false);
-
-
 const handleProfile = () => {
   const token = Cookies.get('authBR')
   if (token) {
@@ -14,7 +11,7 @@ const handleProfile = () => {
     navigateTo('/auth/login')
   }
 }
-
+const isOpen = ref(false);
 const openBurgerMenu = () => {
   isOpen.value = !isOpen.value;
 };
@@ -33,7 +30,7 @@ const openBurgerMenu = () => {
       <NuxtLink to="../restorer">
         <p>Restaurateurs</p>
       </NuxtLink>
-      <NuxtLink to="/">
+      <NuxtLink to="/support">
         <p>Support</p>
       </NuxtLink>
     </div>

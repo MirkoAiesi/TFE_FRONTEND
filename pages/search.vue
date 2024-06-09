@@ -1,16 +1,56 @@
-<script setup>
+<script setup lang="ts">
 import { ref } from 'vue';
+import { useRouter } from 'vue-router';
 import LoadingComponent from '../components/loading-component.vue';
+import { searchRestaurants } from '../services/userService';
 
-const loading = ref(true);
+const router = useRouter();
+
+const restaurants = ref([]);
+const loading = ref(false);
 const loadingResult = ref(true);
+const error = ref(null);
 
-const startSearch = () => {
-    loading.value = false;
-    setTimeout(() => {
-        loading.value = true;
+// Références pour les filtres
+const restaurantName = ref('');
+const restaurantType = ref('');
+const restaurantPrice = ref('');
+const allowDogs = ref(false);
+const hasTerrace = ref(false);
+const acceptsCard = ref(false);
+
+const startSearch = async () => {
+    loading.value = true;
+    loadingResult.value = true;
+    error.value = null;
+
+    const filters = {
+        name: restaurantName.value,
+        type: restaurantType.value,
+        price: restaurantPrice.value,
+        dogs: allowDogs.value,
+        terrace: hasTerrace.value,
+        card: acceptsCard.value
+    };
+
+    try {
+        const allRestaurants = await searchRestaurants(filters);
+        restaurants.value = allRestaurants.filter(restaurant => restaurant.status !== 10);
+    } catch (err) {
+        error.value = err.message || 'Failed to fetch restaurants';
+    } finally {
+        loading.value = false;
         loadingResult.value = false;
-    }, 1500);
+    }
+};
+
+const getStatusText = (status) => {
+    return status === 1 ? 'ouvert' : 'fermer';
+};
+
+// Fonction pour naviguer vers la page de détail d'un restaurant
+const navigateToRestaurant = (id) => {
+    router.push(`/restaurants/${id}`);
 };
 </script>
 
@@ -23,106 +63,59 @@ const startSearch = () => {
                 </div>
                 <div class="content">
                     <div>
-                        <input type="text" name="name" placeholder="Nom du restaurant, ville">
-                        <select name="type">
-                            <option value="Restaurant">Restaurant</option>
-                            <option value="Bistrot">Bistrot</option>
-                            <option value="Gastronomique">Gastronomique</option>
+                        <input type="text" name="name" placeholder="Nom du restaurant, ville" v-model="restaurantName">
+                        <select name="type" v-model="restaurantType">
+                            <option value="">Tous les types</option>
+                            <option value="francais">Cuisine française</option>
+                            <option value="italienne">Cuisine italienne</option>
+                            <option value="mexicaine">Cuisine mexicaine</option>
+                            <option value="chinoise">Cuisine chinoise</option>
                         </select>
-                        <select name="price">
-                            <option value="Restaurant">€ (-50€)</option>
-                            <option value="Bistrot">€€ (50€ - 80€)</option>
-                            <option value="Gastronomique">€€€ (+80€)</option>
+                        <select name="price" v-model="restaurantPrice">
+                            <option value="">Tous les prix</option>
+                            <option value="€">€ (-50€)</option>
+                            <option value="€€">€€ (50€ - 80€)</option>
+                            <option value="€€€">€€€ (+80€)</option>
                         </select>
                     </div>
                     <button @click="startSearch">Rechercher</button>
                     <div class="filter">
                         <p>- Filtrages avancés -</p>
                         <div class="filter-content">
-                            <input id="chien" type="checkbox" name="chien">
                             <label for="chien">Chien autorisé</label>
-                            <input id="terasse" type="checkbox" name="terasse">
-                            <label for="terasse">Terasse</label>
-                            <input id="cart" type="checkbox" name="cart">
+                            <input id="chien" type="checkbox" name="chien" v-model="allowDogs">
+                            <label for="terasse">Terrasse</label>
+                            <input id="terasse" type="checkbox" name="terasse" v-model="hasTerrace">
                             <label for="cart">Payement par carte</label>
+                            <input id="cart" type="checkbox" name="cart" v-model="acceptsCard">
                         </div>
                     </div>
                 </div>
                 <h2>Suggestion d'autres établissements</h2>
                 <div class="suggestions-container">
-                    <div class="restaurant">
-                        <div>
-                            <p><span>★</span> 9</p>
-                        </div>
-                        <img src="/pictures/restaurants/resto.jpg" alt="name">
-                        <h3>Brasserie Quai 10</h3>
-                        <p>Rue Grande 4 7070 Charleroi</p>
-                        <span class="status">Ouvert (11h-22h)</span>
-                    </div>
-                    <div class="restaurant">
-                        <div>
-                            <p><span>★</span> 9</p>
-                        </div>
-                        <img src="/pictures/restaurants/resto.jpg" alt="name">
-                        <h3>Brasserie Quai 10</h3>
-                        <p>Rue Grande 4 7070 Charleroi</p>
-                        <span class="status">Fermé</span>
-                    </div>
-                    <div class="restaurant">
-                        <div>
-                            <p><span>★</span> 9</p>
-                        </div>
-                        <img src="/pictures/restaurants/resto.jpg" alt="name">
-                        <h3>Brasserie Quai 10</h3>
-                        <p>Rue Grande 4 7070 Charleroi</p>
-                        <span class="status">Ouvert (11h-22h)</span>
-                    </div>
+                    <!-- Suggestions des restaurants -->
                 </div>
             </div>
         </section>
 
         <section>
-            <LoadingComponent :class="{ loading: loading }" />
-            <div v-if="loading" class="result" :class="{ loading: loadingResult }">
+            <LoadingComponent v-if="loading" />
+            <div v-else class="result" :class="{ loading: loadingResult }">
                 <div class="resultContainer">
                     <div class="restaurants-wrapper">
-                        <div class="restaurant">
-                            <div>
-                                <p><span>★</span> 9</p>
+                        <div v-if="error" class="error">{{ error }}</div>
+                        <div v-else-if="restaurants.length === 0" class="no-results">No restaurants found</div>
+                        <div v-else>
+                            <div v-for="restaurant in restaurants" :key="restaurant.id" class="restaurant"
+                                @click="navigateToRestaurant(restaurant.id)">
+                                <div>
+                                    <p><span>★</span> {{ restaurant.rating }}</p>
+                                </div>
+                                <img src="http://localhost:3333/restaurants/test.jpg" :alt="restaurant.name">
+                                <h3>{{ restaurant.name }}</h3>
+                                <p>{{ restaurant.address }}</p>
+                                <span class="status">{{ getStatusText(restaurant.status) }}</span>
                             </div>
-                            <img src="/pictures/restaurants/resto.jpg" alt="name">
-                            <h3>Brasserie Quai 10</h3>
-                            <p>Rue Grande 4 7070 Charleroi</p>
-                            <span class="status">Ouvert (11h-22h)</span>
-                        </div>
-                        <div class="restaurant">
-                            <div>
-                                <p><span>★</span> 9</p>
-                            </div>
-                            <img src="/pictures/restaurants/resto.jpg" alt="name">
-                            <h3>Brasserie Quai 10</h3>
-                            <p>Rue Grande 4 7070 Charleroi</p>
-                            <span class="status">Fermé</span>
-                        </div>
-                    </div>
-                    <div class="restaurants-wrapper">
-                        <div class="restaurant">
-                            <div>
-                                <p><span>★</span> 9</p>
-                            </div>
-                            <img src="/pictures/restaurants/resto.jpg" alt="name">
-                            <h3>Brasserie Quai 10</h3>
-                            <p>Rue Grande 4 7070 Charleroi</p>
-                            <span class="status">Ouvert (11h-22h)</span>
-                        </div>
-                        <div class="restaurant">
-                            <div>
-                                <p><span>★</span> 9</p>
-                            </div>
-                            <img src="/pictures/restaurants/resto.jpg" alt="name">
-                            <h3>Brasserie Quai 10</h3>
-                            <p>Rue Grande 4 7070 Charleroi</p>
-                            <span class="status">Fermé</span>
                         </div>
                     </div>
                 </div>
@@ -139,7 +132,7 @@ const startSearch = () => {
 
 .filter-content input {
     accent-color: #6e8b3d;
-    margin-left: 10px;
+    margin: 10px;
 }
 
 .search {
@@ -147,15 +140,20 @@ const startSearch = () => {
     display: flex;
     justify-content: center;
     margin: 50px 0;
+    padding: 0 10px;
+    /* Ajouté pour ajouter des marges internes */
+    box-sizing: border-box;
 }
 
 .search-bar {
-    width: 100%;
+
     max-width: 1100px;
     height: fit-content;
     border-radius: 8px;
     background-color: #6e8b3d;
     margin: 20px;
+    padding: 20px;
+    box-sizing: border-box;
 }
 
 .search-bar .header {
@@ -176,16 +174,21 @@ const startSearch = () => {
     display: flex;
     flex-direction: column;
     align-items: center;
+    box-sizing: border-box;
 }
 
 .content div:first-child {
     display: flex;
     flex-wrap: wrap;
+    justify-content: center;
+    width: 100%;
+    box-sizing: border-box;
 }
 
 .content div:first-child input,
 select {
-    width: 200px;
+    width: 100%;
+    max-width: 200px;
     margin: 10px;
     font-size: 15px;
     padding: 4px;
@@ -230,7 +233,9 @@ select option {
     width: 100%;
     display: flex;
     justify-content: center;
-
+    padding: 0 10px;
+    /* Ajouté pour ajouter des marges internes */
+    box-sizing: border-box;
 }
 
 .resultContainer {
@@ -239,27 +244,30 @@ select option {
     align-items: center;
     max-width: 1100px;
     width: 100%;
+    box-sizing: border-box;
 }
 
 .restaurant {
     position: relative;
-    min-width: 330px;
-    width: 30%;
+    width: 90%;
+    max-width: 300px;
+    /* Réduit la taille maximale des images */
     background-color: #f0f0f0;
-    padding: 15px;
+    padding: 20px;
     margin: 15px;
     border-radius: 8px;
     cursor: pointer;
     transition: 0.2s;
+    box-sizing: border-box;
 }
 
 .restaurant:hover {
-    scale: 1.05;
+    transform: scale(1.05);
+    /* Utilisé transform au lieu de scale */
 }
 
 .restaurant .status {
     float: right;
-    margin-top: 10px;
     font-size: 14px;
 }
 
@@ -286,10 +294,7 @@ select option {
     display: flex;
     flex-wrap: wrap;
     justify-content: center;
-}
-
-.restaurants-wrapper .restaurant {
-    width: 43%;
+    box-sizing: border-box;
 }
 
 h2 {
@@ -304,10 +309,19 @@ h2 {
     max-width: 1100px;
     display: flex;
     justify-content: center;
+    flex-wrap: wrap;
+    /* Ajouté pour s'assurer que les éléments s'adaptent correctement */
+    box-sizing: border-box;
 }
 
 .suggestions-container .restaurant {
-    min-width: 300px;
+    min-width: 200px;
+    /* Réduit la taille minimale des images */
+    max-width: 300px;
+    /* Réduit la taille maximale des images */
+    margin: 10px;
+    /* Ajouté pour espacer les images */
+    box-sizing: border-box;
 }
 
 @media (max-width: 868px) {
@@ -321,5 +335,39 @@ h2 {
     .filter .filter-content {
         flex-direction: column;
     }
+
+    .restaurants-wrapper {
+        flex-direction: column;
+        align-items: center;
+    }
+
+    .search-bar .content {
+        padding: 20px;
+    }
+
+    .search-bar .header p {
+        font-size: 16px;
+    }
+
+    .search-bar .content input,
+    .search-bar .content select {
+        width: calc(100% - 20px);
+        margin: 5px 0;
+    }
+
+    .filter p {
+        font-size: 16px;
+    }
+
+    .suggestions-container {
+        flex-direction: column;
+        align-items: center;
+
+    }
+
+    .suggestions-container .restaurant {
+        width: 90%;
+    }
+
 }
 </style>

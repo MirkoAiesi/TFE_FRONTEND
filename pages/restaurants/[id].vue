@@ -1,48 +1,129 @@
 <script lang="ts" setup>
-import { ref, computed, onMounted } from 'vue'
-const zoom = ref(20)
-const restaurant = ref({
-    name: "Votre restaurant",
-    phoneNumber: "0123456789",
-    address: "123 Rue du Restaurant, Ville",
-    openingHours: "Mardi-Vendredi: 12h00-15h00 et 17h30-22h / Samedi-Dimanche: 12h00 - 23h00",
-    price: "€-€€",
-    cooking: "Française",
-    pet: "non",
-    terrace: "oui",
-    payement: "VISA, MASTERCARD, MAESTRO"
+import { ref, computed, onMounted, } from 'vue'
+import { useRestaurant } from '../../services/useRestaurant';
+import { useRoute } from 'vue-router';
+import Cookies from "js-cookie";
+import { fetchReviewsByRestaurantId, addReview, addBooking } from '../../services/userService';
 
+const route = useRoute();
+const restaurantId = parseInt(route.params.id as string, 10);
 
-})
+const { restaurant, coordinates } = useRestaurant(restaurantId);
 
-const reservationDate = ref(null)
+const reservationDate = ref<Date>()
 const numberOfPersons = ref('2')
 const arrivalTime = ref('12:00')
 
-const value = ref(4.2)
-const colors = ref(['#FF0000', '#F7BA2A', '#6e8b3d'])
+const colors = ref(['#FF0000', '#F7BA2A', '#6e8b3d']);
 
-
-const totalStars = ref(50);
-type StarsByRating = { [key: number]: number };
-const starsByRating = ref<StarsByRating>({ 5: 30, 4: 10, 3: 7, 2: 0, 1: 3 });
-
-const ratingPercentage = (rating: number) => {
-    const stars = starsByRating.value[rating] || 0;
-    return `${(stars / totalStars.value) * 100}%`;
+const isAuthenticated = ref(false);
+const checkAuth = () => {
+    const token = Cookies.get('authBR');
+    isAuthenticated.value = !!token;
+};
+const redirectToLogin = () => {
+    navigateTo('/auth/login') // Remplacez 'login' par le nom de votre route de connexion
 };
 
+const value = ref<number | undefined>(undefined);
+watch(
+    () => restaurant.value?.rating,
+    (newRating) => {
+        if (newRating !== undefined && newRating !== null) {
+            value.value = newRating;
+        }
+    },
+);
+const animalAccepted = ref<string | null>(null);
+const terrace = ref<string | null>(null);
+const payments = ref<string[]>([]);
+const specialRequest = ref('');
+
+const bookingParams = ref({
+    animal: false,
+    terrace: false,
+    specialRequest: ''
+})
+watch(
+    () => restaurant.value?.options,
+    (newOptions) => {
+        if (newOptions) {
+            const optionsArray = newOptions.split(',').map(option => option.trim());
+            animalAccepted.value = optionsArray[0] || null;
+            terrace.value = optionsArray[1] || null;
+            payments.value = optionsArray.slice(2) || [];
+        }
+    },
+);
+interface Schedule {
+    [day: string]: [string, string];
+}
+
+const parsedSchedule = computed<Schedule | null>(() => {
+    try {
+        if (!restaurant.value?.schedule) {
+            return null;
+        }
+        // Si le champ schedule est déjà un objet JSON, pas besoin de le parser à nouveau
+        return restaurant.value.schedule as Schedule;
+    } catch (e) {
+        console.error('Error parsing schedule:', e);
+        return null;
+    }
+});
+
+// Fonction pour capitaliser la première lettre du jour
+const capitalize = (str: string) => {
+    return str.charAt(0).toUpperCase() + str.slice(1);
+};
+const daysOrder = ['lundi', 'mardi', 'mercredi', 'jeudi', 'vendredi', 'samedi', 'dimanche'];
+const orderedSchedule = computed(() => {
+    if (!parsedSchedule.value) {
+        return [];
+    }
+
+    return daysOrder
+        .map(day => [day, parsedSchedule.value![day]])
+        .filter(([day, hours]) => hours);
+});
+const daysOfWeek = ['dimanche', 'lundi', 'mardi', 'mercredi', 'jeudi', 'vendredi', 'samedi'];
+
 const availableTimes = computed(() => {
-    const times: string[] = []
-    for (let i = 12; i < 22; i++) { // Arrêter à 22h pour correspondre à votre exemple
-        for (let j = 0; j < 2; j++) { // Deux demi-heures par heure
-            const hour = i < 10 ? `0${i}` : `${i}`
-            const minute = j === 0 ? '00' : '30'
-            times.push(`${hour}:${minute}`)
+    if (!restaurant.value?.schedule || !reservationDate.value) {
+        return [];
+    }
+
+    const date = new Date(reservationDate.value);
+    const dayOfWeek = daysOfWeek[date.getDay()]; // Récupérer le jour de la semaine
+
+    const schedule = restaurant.value.schedule as Schedule;
+    const daySchedule = schedule[dayOfWeek];
+
+    if (!daySchedule || daySchedule[0] === 'fermé') {
+        return []; // Si le restaurant est fermé ce jour-là, retourner un tableau vide
+    }
+
+    const [openingTime, closingTime] = daySchedule;
+
+    const times: string[] = [];
+    let [openingHour, openingMinute] = openingTime.split(':').map(Number);
+    let [closingHour, closingMinute] = closingTime.split(':').map(Number);
+
+    let currentHour = openingHour;
+    let currentMinute = openingMinute;
+
+    while (currentHour < closingHour || (currentHour === closingHour && currentMinute < closingMinute)) {
+        times.push(`${currentHour < 10 ? '0' : ''}${currentHour}:${currentMinute === 0 ? '00' : '30'}`);
+        if (currentMinute === 0) {
+            currentMinute = 30;
+        } else {
+            currentMinute = 0;
+            currentHour += 1;
         }
     }
-    return times
-})
+
+    return times;
+});
 
 const images = ref([
     { src: "/pictures/restaurants/resto.jpg", alt: "name1" },
@@ -51,30 +132,37 @@ const images = ref([
     // Ajoutez autant d'images que nécessaire
 ]);
 
+interface User {
+    firstName: String;
+    lastName: String;
+}
+
 interface Comment {
-    text: string;
+    comment: string;
     rating: number;
+    createdAt: string;
+    user: User;
 }
 
 const comments = ref<Comment[]>([]);
 let currentPage: number = 1;
 let totalPages: number = 1;
 
-const getComments = () => {
-    // Exemple de données factices pour les commentaires
-    const fakeComments: Comment[] = [
-        { text: 'Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed non risus. Suspendisse lectus tortor, dignissim sit amet, adipiscing nec, ultricies sed, dolor. Cras elementum ultrices diam. Maecenas ligula massa, varius a, semper congue, euismod non, mi. Proin porttitor, orci nec nonummy molestie, enim est eleifend mi, non fermentum diam nisl sit amet erat. Duis semper. Duis arcu massa, scelerisque vitae, consequat in, pretium a, enim. Pellentesque congue. Ut in risus volutpat libero pharetra tempor. Cras vestibulum bibendum augue. Praesent egestas leo in pede. Praesent blandit odio eu enim. Pellentesque sed dui ut augue blandit sodales. Vestibulum ante ipsum primis in faucibus orci luctus et ultrices posuere cubilia Curae; Aliquam nibh. Mauris ac mauris sed pede pellentesque fermentum. Maecenas adipiscing ante non diam sodales hendrerit.', rating: 4 },
-        { text: 'Commentaire 2', rating: 5 },
-        { text: 'Commentaire 2', rating: 5 },
-        { text: 'Commentaire 2', rating: 5 },
-        { text: 'Commentaire 2', rating: 5 },
-        // Ajoutez plus de données factices ici...
-    ];
-    comments.value = comments.value.concat(fakeComments);
-    // Simulez un nombre total de pages
-    totalPages = 3;
-};
+const getComments = async (restaurantId: number) => {
+    try {
+        const response = await fetchReviewsByRestaurantId(restaurantId);
 
+        // Vérifiez si la réponse est un tableau
+        if (Array.isArray(response)) {
+            comments.value = comments.value.concat(response);
+        } else {
+            // Si la réponse est un objet unique, transformez-le en tableau
+            comments.value = comments.value.concat([response] as Comment[]);
+        }
+    } catch (e) {
+        console.error('Error getting comments:', e);
+    }
+};
 const checkScroll = () => {
     const commentContainer: HTMLElement | null = commentContainerRef.value;
     // Vérifiez si l'utilisateur a atteint le bas de la zone de défilement
@@ -87,7 +175,8 @@ const checkScroll = () => {
         if (currentPage < totalPages) {
             // Chargez les commentaires de la page suivante
             currentPage++;
-            getComments();
+            const restaurantId = parseInt(route.params.id, 10);
+            getComments(restaurantId);
         }
     }
 };
@@ -95,8 +184,50 @@ const checkScroll = () => {
 const commentContainerRef = ref<HTMLElement | null>(null);
 
 onMounted(() => {
-    getComments();
+    const restaurantId = parseInt(route.params.id, 10);
+    getComments(restaurantId);
+    updateIsMobile();
+    window.addEventListener('resize', updateIsMobile);
+    checkAuth();
 });
+
+const rating = ref<number | null>(null);
+const comment = ref<string>('');
+const errorMessage = ref<string | null>(null);
+
+const submitReview = async () => {
+    if (rating.value === null) {
+        errorMessage.value = 'Veuillez sélectionner une évaluation.';
+        return;
+    }
+
+    if (!comment.value.trim()) {
+        errorMessage.value = 'Veuillez entrer un commentaire.';
+        return;
+    }
+    const userId = parseInt(route.params.id, 10);
+
+    const review = {
+        userId,
+        restaurantId,
+        rating: rating.value,
+        comment: comment.value,
+    };
+
+    try {
+        const response = await addReview(restaurantId, review);
+        console.log('Review added:', response);
+        rating.value = null;
+        comment.value = '';
+        errorMessage.value = null;
+        getComments(parseInt(route.params.id, 10));
+    } catch (e) {
+        console.error('Error adding review:', e);
+        errorMessage.value = 'Erreur lors de l\'ajout de l\'avis.';
+    }
+};
+
+
 const dialogVisible = ref(false)
 
 const popup = (time: string) => {
@@ -105,7 +236,80 @@ const popup = (time: string) => {
     arrivalTime.value = time
 
 };
+const isMobile = ref(false);
 
+const updateIsMobile = () => {
+    isMobile.value = window.innerWidth <= 768;
+};
+const nameRegex = /^[a-zA-ZÀ-ÿ\s'-]*$/;
+const lastName = ref('');
+watch(lastName, (newValue, oldValue) => {
+    if (!nameRegex.test(newValue)) {
+        lastName.value = oldValue;
+        nextTick(() => {
+            ElMessage({
+                type: 'error',
+                showClose: true,
+                grouping: true,
+                message: 'Veuillez rentrer des caractères valides.',
+            });
+        });
+    }
+});
+
+const emailRegex = /^[a-zA-Z0-9@._-]*$/;
+const email = ref('');
+watch(email, (newValue, oldValue) => {
+    if (!emailRegex.test(newValue)) {
+        email.value = oldValue;
+        nextTick(() => {
+            ElMessage({
+                type: 'error',
+                showClose: true,
+                grouping: true,
+                message: 'Veuillez rentrer des caractères valides.',
+            });
+        });
+    }
+});
+
+const handleSubmitBooking = async () => {
+    if (!reservationDate.value) {
+        console.error('Reservation date is required.');
+        return;
+    }
+
+    const selectedDate = new Date(reservationDate.value);
+    const today = new Date();
+    today.setHours(0, 0, 0, 0); // Pour comparer seulement la date
+
+    const [reservationHour, reservationMinute] = arrivalTime.value.split(':').map(Number);
+    if (selectedDate.getDate() === today.getDate() && selectedDate.getMonth() === today.getMonth()) {
+        const now = new Date();
+        if (reservationHour < now.getHours() || (reservationHour === now.getHours() && reservationMinute <= now.getMinutes())) {
+            console.error('Reservation time must be in the future.');
+            return;
+        }
+    }
+
+    const dateTime = `${reservationDate.value} ${arrivalTime.value}`;
+    bookingParams.value.specialRequest = specialRequest.value;
+
+    const booking = {
+        restaurant_id: parseInt(route.params.id, 10),
+        date_time: dateTime,
+        number_people: numberOfPersons.value,
+        comment: bookingParams.value,
+    };
+
+    try {
+        await addBooking(booking);
+        console.log('Booking added successfully');
+        dialogVisible.value = false;
+    } catch (error) {
+        console.error('Error adding booking:', error);
+    }
+};
 
 </script>
 
@@ -113,15 +317,20 @@ const popup = (time: string) => {
     <div class="restaurant-page">
         <div class="restaurant_suggestion">
             <header>
-                <h1>{{ restaurant.name }}</h1>
+                <h1>{{ restaurant?.name }}</h1>
             </header>
             <section class="restaurant-info">
                 <el-rate v-model="value" size="large" disabled show-score :colors=colors text-color="#6e8b3d"
                     score-template="{value} points" />
                 <div class="info-row">
-                    <p><strong>Horaires:</strong> {{ restaurant.openingHours }}</p>
+                    <p><strong>Horaires:</strong></p>
+                    <ul v-if="orderedSchedule.length">
+                        <li v-for="([day, hours]) in orderedSchedule" :key="String(day)">
+                            <strong>{{ capitalize(String(day)) }}:</strong> {{ hours[0] }} - {{ hours[1] }}
+                        </li>
+                    </ul>
+                    <p v-else>Aucun horaire disponible.</p>
                 </div>
-
             </section>
             <div class="reservation-carousel">
                 <div class="reservation-info">
@@ -142,6 +351,11 @@ const popup = (time: string) => {
                                     <option value="3">3 personnes</option>
                                     <option value="4">4 personnes</option>
                                     <option value="5">5 personnes</option>
+                                    <option value="6">6 personnes</option>
+                                    <option value="7">7 personnes</option>
+                                    <option value="8">8 personnes</option>
+                                    <option value="9">9 personnes</option>
+                                    <option value="10">10 personnes</option>
                                     <!-- Ajoutez autant d'options que nécessaire -->
                                 </select>
                             </div>
@@ -156,8 +370,14 @@ const popup = (time: string) => {
                                 <input type="date" v-model="reservationDate" class="date-input">
                             </div>
 
+                            <select class="show-reservation-select" v-model="arrivalTime">
+                                <option v-for="time in availableTimes" :key="time" :value="time">
+                                    {{ time }}
+                                </option>
+                            </select>
+
                         </div>
-                        <div class="reservation-button">
+                        <div class="reservation-button" v-if="!isMobile">
                             <button v-for="time in availableTimes" :key="time" @click=popup(time)>
                                 {{ time }}
                             </button>
@@ -166,13 +386,13 @@ const popup = (time: string) => {
                     <div class="info-supp ">
                         <h3>Informations supplémentaires</h3>
                         <div class="info-column">
-                            <p><strong>Adresse:</strong> {{ restaurant.address }}</p>
-                            <p><strong>Téléphone:</strong> {{ restaurant.phoneNumber }}</p>
-                            <p><strong>Prix:</strong> {{ restaurant.price }}</p>
-                            <p><strong>Cuisines:</strong> {{ restaurant.cooking }}</p>
-                            <p><strong>Animaux accepté:</strong> {{ restaurant.pet }}</p>
-                            <p><strong>Terrasse:</strong> {{ restaurant.terrace }}</p>
-                            <p><strong>Payements autorisés:</strong> {{ restaurant.payement }}</p>
+                            <p><strong>Adresse:</strong> {{ restaurant?.address }}</p>
+                            <p><strong>Téléphone:</strong> {{ restaurant?.phone }}</p>
+                            <p><strong>Prix:</strong> {{ restaurant?.price }}</p>
+                            <p><strong>Cuisines:</strong> {{ restaurant?.cookingType }}</p>
+                            <p><strong>Animaux accepté:</strong> {{ animalAccepted }}</p>
+                            <p><strong>Terrasse:</strong> {{ terrace }}</p>
+                            <p><strong>Payements autorisés:</strong> {{ payments.join(', ') }}</p>
                             <div style="display: flex;width: 100%;">
                                 <NuxtLink to="../search"><img src="/public/pictures/facebook.png" alt="facebook"
                                         style="width: 30px; margin:10px;">
@@ -199,19 +419,18 @@ const popup = (time: string) => {
                         </div>
                     </div>
                     <div class="map-container">
-                        <LMap ref="map" :zoom="zoom" :center="[48.8719, 2.3035]">
+                        <LMap v-if="coordinates" :zoom="16" :center="[coordinates.lat, coordinates.lon]">
                             <LTileLayer url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-                                attribution="&amp;copy; <a href=&quot;https://www.openstreetmap.org/&quot;>OpenStreetMap</a> contributors"
-                                layer-type="base" name="OpenStreetMap" />
-                            <LMarker :lat-lng="[48.8719, 2.3035]">
-                                <LTooltip>Champs-Élysées</LTooltip>
+                                attribution="&amp;copy; OpenStreetMap contributors" />
+                            <LMarker :lat-lng="[coordinates.lat, coordinates.lon]">
+                                <LTooltip>{{ restaurant?.name }}</LTooltip>
                             </LMarker>
                         </LMap>
                     </div>
                 </div>
             </div>
         </div>
-        <h2>Suggestion d'autres établissements</h2>
+        <h2>Suggestion d' autres établissements</h2>
         <div class="resultContainer">
             <div class="restaurant">
                 <div>
@@ -246,70 +465,66 @@ const popup = (time: string) => {
             <div class="notes">
                 <el-rate v-model="value" size="large" disabled show-score :colors="colors" text-color="#6e8b3d"
                     score-template="{value} points" />
-                <span>({{ totalStars }})</span>
-                <div class="rating-distribution">
-                    <span v-for="[rating] in Object.entries(starsByRating).reverse()" :key="rating">
-                        {{ rating }}<span>★</span>
-                        <div class="progress-bar-container">
-                            <div class="progress-bar" :style="{ width: ratingPercentage(Number(rating)) }"></div>
-                        </div>
-                    </span>
-                </div>
+                <span>({{ comments.length }})</span>
                 <div class="rating-customer">
                     <h3>Commentaires des clients</h3>
                     <div class="comment-container" ref="commentContainer" @scroll="checkScroll">
                         <ul>
                             <li v-for="(comment, index) in comments" :key="index">
-                                <p>{{ comment.text }}</p>
-                                <p>Note: {{ comment.rating }}<span>★</span></p>
+                                <p>{{ comment.comment }}</p>
+                                <p>Note: {{ comment.rating }}<span>★</span> | {{ comment.user.firstName }} {{
+                    comment.user.lastName }}</p>
                             </li>
                         </ul>
                     </div>
                 </div>
             </div>
             <div class="comments">
-
-                <form>
-                    <div class="rate-all">
-                        <h3>Donnez votre avis</h3>
-                        <div class="rate-id">
-                            <label for="name">Nom:</label>
-                            <input type="text" id="name">
-                            <label for="email">Email:</label>
-                            <input type="email" id="email">
+                <div v-if="isAuthenticated">
+                    <form @submit.prevent="submitReview">
+                        <div class="rate-all">
+                            <h3>Donnez votre avis</h3>
+                            <div class="rate-rating">
+                                <label for="rating">Évaluation:</label>
+                                <select id="rating" v-model="rating">
+                                    <option value="">-- Choisissez une évaluation --</option>
+                                    <option value="1">1 étoile</option>
+                                    <option value="2">2 étoiles</option>
+                                    <option value="3">3 étoiles</option>
+                                    <option value="4">4 étoiles</option>
+                                    <option value="5">5 étoiles</option>
+                                </select>
+                            </div>
+                            <div class="rate-comment">
+                                <label for="comment">Commentaire:</label>
+                                <textarea style="padding:3px;" id="comment" v-model="comment"></textarea>
+                            </div>
+                            <button type="submit">Envoyer</button>
+                            <div class="error" v-if="errorMessage">{{ errorMessage }}</div>
                         </div>
-
-                        <div class="rate-rating">
-                            <label for="rating">Évaluation:</label>
-                            <select id="rating">
-                                <option value="">-- Choisissez une évaluation --</option>
-                                <option value="1">1 étoile</option>
-                                <option value="2">2 étoiles</option>
-                                <option value="3">3 étoiles</option>
-                                <option value="4">4 étoiles</option>
-                                <option value="5">5 étoiles</option>
-                            </select>
-                        </div>
-                        <div class="rate-comment">
-                            <label for="comment">Commentaire:</label>
-                            <textarea id="comment"></textarea>
-                        </div>
-                        <button type="submit">Envoyer</button>
-                    </div>
-                </form>
+                    </form>
+                </div>
+                <div v-else>
+                    <el-button type="success" round @click="redirectToLogin">Connectez-vous pour
+                        laisser un
+                        avis</el-button>
+                </div>
             </div>
         </div>
         <el-dialog v-model="dialogVisible" title="Tips" width="500">
-            <p>Résumé de la réservation : {{ numberOfPersons }} personne(s) | {{ reservationDate }} | {{ arrivalTime }}
+            <p>Résumé de la réservation : {{ numberOfPersons }} personne(s) | {{ reservationDate
+                }} | {{ arrivalTime }}
             </p>
-            <label><input type="checkbox" name="option1"> Terrasse</label> <br>
-            <label><input type="checkbox" name="option2"> Chien</label>
+            <label v-if="terrace === 'oui'"><input type="checkbox" name="option1" v-model="bookingParams.terrace">
+                Terrasse</label> <br>
+            <label v-if="animalAccepted === 'oui'"><input type="checkbox" name="option2" v-model="bookingParams.animal">
+                Chien</label>
             <p>Demande(s) particulière(s)</p>
-            <textarea style="resize:none; width: 100%; height: 50px;"></textarea>
+            <textarea v-model="specialRequest" style="resize:none; width: 100%; height: 50px; padding:5px;"></textarea>
             <template #footer>
                 <div class="dialog-footer">
                     <el-button @click="dialogVisible = false">Cancel</el-button>
-                    <el-button type="primary" @click="dialogVisible = false">
+                    <el-button type="primary" @click="handleSubmitBooking">
                         Confirm
                     </el-button>
                 </div>
@@ -350,6 +565,24 @@ header h1 {
     padding-top: 5px;
 }
 
+.info-row ul {
+    display: flex;
+    flex-wrap: wrap;
+    /* Si vous voulez qu'il passe à la ligne suivante quand il y a trop d'éléments */
+    list-style: none;
+    padding: 0;
+    margin: 0;
+}
+
+.info-row li {
+    margin-right: 10px;
+}
+
+.info-row li.schedule-item {
+    margin: 10px;
+    /* Espace entre les éléments */
+}
+
 .info-row p {
     margin-right: 20px;
 }
@@ -362,7 +595,6 @@ header h1 {
 .info-column p {
     padding-top: 10px;
 }
-
 
 .reservation-square {
     padding: 20px;
@@ -405,7 +637,6 @@ header h1 {
     margin: 10px;
     padding: 4px;
 }
-
 
 select {
     width: 150px;
@@ -480,6 +711,10 @@ select {
     margin: 20px;
 }
 
+.show-reservation-select {
+    display: none;
+}
+
 .map-container {
     width: 683px;
     height: 341.6px;
@@ -548,7 +783,7 @@ h3 {
 }
 
 .notes {
-    padding: 20px;
+    padding: 25px;
     margin: 20px;
     border: 1px solid #ddd;
     background-color: white;
@@ -556,7 +791,6 @@ h3 {
     height: 300px;
     width: 30%;
 }
-
 
 .rating-distribution {
     display: flex;
@@ -572,7 +806,6 @@ h3 {
     height: 15px;
     background-color: #ccc;
     margin-right: 15px;
-
 }
 
 .progress-bar {
@@ -582,7 +815,7 @@ h3 {
 }
 
 .comments {
-    padding: 20px;
+    padding: 25px;
     margin: 20px;
     border: 1px solid #ddd;
     background-color: white;
@@ -590,6 +823,8 @@ h3 {
     height: 300px;
     width: 30%;
     display: flex;
+    align-items: center;
+    justify-content: center;
 }
 
 .comments form {
@@ -626,15 +861,8 @@ h3 {
     justify-content: center;
 }
 
-.rate-id {
-    flex-direction: row;
-    margin-top: 20px;
-
-}
-
-.rate-id label {
-    padding: 10px;
-
+.rate-all h3 {
+    margin-bottom: 20px;
 }
 
 .rate-rating {
@@ -665,5 +893,137 @@ h3 {
     margin: 10px;
     width: 80%;
     height: 100px;
+}
+
+@media (max-width: 868px) {
+    .restaurant-page {
+        padding: 10px;
+    }
+
+    header {
+        padding-left: 10px;
+        text-align: center;
+    }
+
+    .restaurant-info,
+    .info-supp,
+    .reservation-square,
+    .notes,
+    .comments {
+        width: 90%;
+        padding: 10px;
+        margin: 10px;
+        height: auto;
+
+    }
+
+    .reservation-carousel {
+        display: block;
+    }
+
+    .carousel-map {
+        width: 90%;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        margin: 20px;
+    }
+
+    .carousel {
+        width: 100%;
+    }
+
+    .map-container {
+        width: 100%;
+    }
+
+    .reservation-data {
+        flex-direction: column;
+        align-items: center;
+    }
+
+    .reservation-button {
+        display: none;
+    }
+
+    .show-reservation-select {
+        display: block;
+        width: 80%;
+        background-color: #6e8b3d;
+        color: white;
+        border: none;
+        text-align: center;
+        margin: 10px;
+    }
+
+    .reservation-button {
+        height: auto;
+        width: 100%;
+    }
+
+    .reservation-button button {
+        width: 80%;
+    }
+
+    .custom-carousel {
+        width: 100%;
+    }
+
+    .map-container {
+        width: 100%;
+    }
+
+    .resultContainer {
+        flex-direction: column;
+        align-items: center;
+    }
+
+    .restaurant {
+        width: auto;
+        margin: 10px 0;
+    }
+
+    .notes-comments {
+        flex-direction: column;
+        align-items: center;
+    }
+
+    .notes,
+    .comments {
+        width: 90%;
+        height: auto;
+    }
+
+    .comment-container {
+        height: auto;
+        max-height: 200px;
+    }
+
+    .progress-bar-container {
+        width: 35px;
+        height: 15px;
+        background-color: #ccc;
+        margin-right: 15px;
+    }
+
+    .progress-bar {
+        height: 100%;
+        background-color: #6e8b3d;
+        /* Couleur de la partie remplie de la barre */
+    }
+
+    .form-group {
+        margin: 10px;
+        width: 200px;
+        height: 150px;
+
+    }
+
+    .form-group input {
+        width: 150px;
+        height: 40px;
+        margin: 10px;
+
+    }
 }
 </style>

@@ -1,139 +1,143 @@
 <script lang="ts" setup>
-import { ref, computed } from 'vue'
-
-const dialogVisible = ref(false)
-const selectedRestaurant = ref({
-    name: "",
-    address: "",
-    phone: "",
-    cooking: "",
-    price: "",
-    cutlery: "",
-    terrace: "",
-    dog: "",
-    payement: "",
-})
-const popup = (row: Restaurant) => {
-
-    dialogVisible.value = true
-    selectedRestaurant.value.name = row.name
-    selectedRestaurant.value.address = row.address
-    selectedRestaurant.value.phone = row.phone
-    selectedRestaurant.value.cooking = row.cooking
-    selectedRestaurant.value.price = row.price
-    selectedRestaurant.value.cutlery = row.cutlery
-    selectedRestaurant.value.terrace = row.terrace
-    selectedRestaurant.value.dog = row.dog
-    selectedRestaurant.value.payement = row.payement
-};
+import { ref, computed, onMounted } from 'vue';
+import { fetchAllRestaurants, updateRestaurantStatus } from '../services/userService';
 
 interface Restaurant {
-    name: string
-    address: string
-    phone: string
-    cooking: string
-    price: string
-    cutlery: string
-    terrace: string
-    dog: string
-    payement: string
+    id: number;
+    name: string;
+    owner_id: number;
+    address: string;
+    desc: string;
+    options: string;
+    status: number;
+    phone: string;
+    cookingType: string;
+    price: string;
+    cultery: number;
+    schedule: object;
+    cut_time: string;
+    vacancy: string;
+    rating: number;
+    createdAt: string;
+    updatedAt: string;
 }
 
-const search = ref('')
-const filterTableData = computed(() =>
-    tableData.filter(
-        (data) =>
-            !search.value ||
-            data.name.toLowerCase().includes(search.value.toLowerCase())
-    )
-)
+const restaurants = ref<Restaurant[]>([]);
+const selectedRestaurant = ref<Restaurant | null>(null);
+const dialogVisible = ref(false);
 
-const tableData: Restaurant[] = [
-    {
-        name: 'Tom',
-        address: 'Rue des veaux 12, 6500 Leugnies',
-        phone: '071589107',
-        cooking: 'Italienne',
-        price: "€-€€",
-        cutlery: "35 personnes",
-        terrace: "oui",
-        dog: "oui",
-        payement: "Visa, Mastercard",
-    },
-    {
-        name: 'John',
-        address: 'Rue des veaux 12, 6500 Leugnies',
-        phone: '071589107',
-        cooking: 'Italienne',
-        price: "€-€€",
-        cutlery: "35 personnes",
-        terrace: "non",
-        dog: "oui",
-        payement: "Visa, Mastercard",
-    },
-    {
-        name: 'Morgan',
-        address: 'Rue des veaux 12, 6500 Leugnies',
-        phone: '071589107',
-        cooking: 'Italienne',
-        price: "€-€€",
-        cutlery: "35 personnes",
-        terrace: "non",
-        dog: "oui",
-        payement: "Visa, Mastercard",
-    },
-    {
-        name: 'Jessy',
-        address: 'Rue des veaux 12, 6500 Leugnies',
-        phone: '071589107',
-        cooking: 'Italienne',
-        price: "€-€€",
-        cutlery: "35 personnes",
-        terrace: "oui",
-        dog: "oui",
-        payement: "Visa, Mastercard",
-    },
-]
+const fetchData = async () => {
+    try {
+        const data = await fetchAllRestaurants();
+        restaurants.value = data;
+        console.log('Fetched restaurants:', data);
+    } catch (error) {
+        console.error('Error fetching restaurants:', error);
+    }
+};
+
+onMounted(fetchData);
+
+const pendingRestaurants = computed(() => {
+    return restaurants.value.filter(restaurant => restaurant.status === 10);
+});
+
+const animalAccepted = ref<string | null>(null);
+const terrace = ref<string | null>(null);
+const payments = ref<string[]>([]);
+
+const popup = (restaurant: Restaurant) => {
+    selectedRestaurant.value = restaurant;
+    dialogVisible.value = true;
+
+    const optionsArray = restaurant.options.split(',').map(option => option.trim());
+    animalAccepted.value = optionsArray[0] || null;
+    terrace.value = optionsArray[1] || null;
+    payments.value = optionsArray.slice(2) || [];
+};
+
+const confirmRestaurant = async (id: number) => {
+    try {
+        console.log(`Confirming restaurant with ID: ${id}`); // Ajout de logs pour déboguer
+        await updateRestaurantStatus(id, 1); // 1 pour confirmer
+        fetchData(); // Re-fetch data to update the list
+        dialogVisible.value = false;
+    } catch (error) {
+        console.error('Error confirming restaurant:', error);
+    }
+};
+
+interface Schedule {
+    [day: string]: [string, string];
+}
+
+const parsedSchedule = computed<Schedule | null>(() => {
+    try {
+        if (!selectedRestaurant.value?.schedule) {
+            return null;
+        }
+        return selectedRestaurant.value.schedule as Schedule;
+    } catch (e) {
+        console.error('Error parsing schedule:', e);
+        return null;
+    }
+});
+
+const capitalize = (str: string) => {
+    return str.charAt(0).toUpperCase() + str.slice(1);
+};
+
+const daysOrder = ['lundi', 'mardi', 'mercredi', 'jeudi', 'vendredi', 'samedi', 'dimanche'];
+const orderedSchedule = computed(() => {
+    if (!parsedSchedule.value) {
+        return [];
+    }
+
+    return daysOrder
+        .map(day => [day, parsedSchedule.value![day]])
+        .filter(([day, hours]) => hours);
+});
 </script>
+
 <template>
     <div class="container orders">
-        <h4 style="margin-bottom:15px;">Restaurants en attente de validation : </h4>
-        <el-table :data="filterTableData" style="width: 100%">
+        <h4 style="margin-bottom:15px;">Restaurants en attente de validation :</h4>
+        <el-table :data="pendingRestaurants" style="width: 100%">
             <el-table-column label="Nom" prop="name" />
             <el-table-column label="Adresse" prop="address" />
             <el-table-column label="Téléphone" prop="phone" />
-            <el-table-column label="Cuisine" prop="cooking" />
+            <el-table-column label="Cuisine" prop="cookingType" />
             <el-table-column label="Prix" prop="price" />
-            <el-table-column label="Capacité" prop="cutlery" />
+            <el-table-column label="Capacité" prop="cultery" />
             <el-table-column align="right">
-                <template #header>
-                    <el-input v-model="search" size="small" placeholder="Recherche restaurant" />
-                </template>
                 <template #default="scope">
-                    <el-button size="small" type="success" @click=popup(scope.row)>
+                    <el-button size="small" type="success" @click="() => popup(scope.row)">
                         Confirmer
                     </el-button>
                 </template>
             </el-table-column>
         </el-table>
-        <el-dialog v-model="dialogVisible" title="Détails de la demande" width="500">
-            <p>Nom du restaurant : {{ selectedRestaurant.name }}</p>
-            <p>Adresse : {{ selectedRestaurant.address }}</p>
-            <p>Téléphone : {{ selectedRestaurant.phone }}</p>
-            <p>Type de cuisine : {{ selectedRestaurant.cooking }}</p>
-            <p>Prix : {{ selectedRestaurant.price }}</p>
-            <p>Capacité : {{ selectedRestaurant.cutlery }}</p>
-            <p>Terrasse : {{ selectedRestaurant.terrace }}</p>
-            <p>Chien : {{ selectedRestaurant.dog }}</p>
-            <p>Type(s) payement(s) accepté(s) : {{ selectedRestaurant.payement }}</p>
+
+        <el-dialog v-model="dialogVisible" title="Détails de la demande" width="500px">
+            <p>Nom du restaurant : {{ selectedRestaurant?.name }}</p>
+            <p>Adresse : {{ selectedRestaurant?.address }}</p>
+            <p>Téléphone : {{ selectedRestaurant?.phone }}</p>
+            <p>Type de cuisine : {{ selectedRestaurant?.cookingType }}</p>
+            <p>Prix : {{ selectedRestaurant?.price }}</p>
+            <p>Capacité : {{ selectedRestaurant?.cultery }} personnes</p>
+            <p>Terrasse : {{ terrace }}</p>
+            <p>Animaux acceptés : {{ animalAccepted }}</p>
+            <p>Type(s) de paiement accepté(s) : {{ payments.join(', ') }}</p>
+            <ul v-if="orderedSchedule.length" style="list-style-type: none; padding-left: 0;">
+                <li v-for="([day, hours]) in orderedSchedule" :key="String(day)">
+                    <strong>{{ capitalize(String(day)) }}:</strong> {{ hours[0] }} - {{ hours[1] }}
+                </li>
+            </ul>
+            <p v-else>Aucun horaire disponible.</p>
             <template #footer>
                 <div class="dialog-footer">
-                    <el-button type="danger" @click="dialogVisible = false">
-                        Refuser
-                    </el-button>
-                    <el-button type="primary" @click="dialogVisible = false">
-                        Confirmer
-                    </el-button>
+                    <el-button type="danger" @click="dialogVisible = false">Refuser</el-button>
+                    <el-button type="primary" @click="confirmRestaurant(selectedRestaurant?.id)">Confirmer</el-button>
                 </div>
             </template>
         </el-dialog>

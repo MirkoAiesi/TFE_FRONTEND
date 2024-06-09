@@ -51,6 +51,25 @@
         </div>
       </div>
     </section>
+    <section class="explain">
+      <div class="explainContainer">
+        <h2>Système de fidélité</h2>
+        <div class="bentoContainer">
+          <p>Quand vous réservez une table chez un de nos restaurateurs sur BetterRestaurant, vous accumulez des points
+            de fidélité échangeables contre des bons de réduction.</p>
+          <br>
+          <p>Une réservation = 20 points de fidélité</p>
+          <p>Un avis sur un restaurant où vous avez mangé = 5 points de fidélité</p>
+        </div>
+        <div id="delayShadow" class="bentoContainer reverse">
+          <p>100 points : 5% de réduction sur la prochaine réservation.</p>
+          <p>200 points : 10% de réduction sur la prochaine réservation.</p>
+          <p>500 points : 20% de réduction sur la prochaine réservation.</p>
+        </div>
+      </div>
+
+
+    </section>
     <section class="callAction">
       <h2>
         Il ne reste qu'une chose à faire, rechercher le restaurant de vos envies
@@ -305,6 +324,14 @@ h2 {
   animation: phone 2s ease-in-out infinite alternate;
 }
 
+.reward {
+  width: 100%;
+  display: flex;
+  justify-content: center;
+  flex-direction: column;
+  align-items: center;
+}
+
 @keyframes shadow {
   0% {
     transform: scale(1.05);
@@ -504,6 +531,19 @@ h2 {
 
   .landingImage {
     display: none;
+  }
+
+  .explain {
+    width: 95%;
+  }
+
+  .callAction h2 {
+    font-size: 18px;
+  }
+
+  .callAction button {
+    font-size: 16px;
+
   }
 }
 </style>

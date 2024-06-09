@@ -2,15 +2,21 @@
 import { parseISO, differenceInYears } from "date-fns";
 import { ElMessage } from "element-plus";
 import { addUser } from "../../services/userService";
+
 const state = reactive({
   first_name: undefined,
   last_name: undefined,
   email: undefined,
-  password: undefined,
-  confirm: undefined,
+  password: '',
+  confirm: '',
   birthday: undefined,
   condition: false,
 });
+
+function isValidPassword(password: string): boolean {
+  const passwordRegex = /^(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$/;
+  return passwordRegex.test(password);
+}
 
 async function onSubmit() {
   if (!state.birthday) {
@@ -34,6 +40,15 @@ async function onSubmit() {
       showClose: true,
       grouping: true,
       message: "Les mots de passes sont différents.",
+    });
+    return;
+  }
+  if (!isValidPassword(state.password)) {
+    ElMessage({
+      type: "error",
+      showClose: true,
+      grouping: true,
+      message: "Le mot de passe doit contenir au moins 8 caractères, dont une majuscule, un chiffre et un caractère spécial.",
     });
     return;
   }
@@ -61,6 +76,21 @@ async function onSubmit() {
     });
   }
 }
+const dialogVisible = ref(false)
+
+const popup = () => {
+
+  dialogVisible.value = true
+
+};
+const confirmDialog = () => {
+  state.condition = true;
+  dialogVisible.value = false;
+};
+const cancelDialog = () => {
+  dialogVisible.value = false;
+  state.condition = false;
+};
 </script>
 
 <template>
@@ -68,11 +98,10 @@ async function onSubmit() {
     <div class="register-text">
       <h2>INSCRIPTION</h2>
       <h3>
-        Afin de profiter de toute les fonctionnalités de BetterRestaurant merci
-        de créer un compte.
+        Afin de profiter de toutes les fonctionnalités de BetterRestaurant, merci de créer un compte.
       </h3>
       <NuxtLink to="../auth/login">
-        <p>Vous avez un compte cliqué ici</p>
+        <p>Vous avez un compte ? Cliquez ici</p>
       </NuxtLink>
     </div>
     <div class="register-container">
@@ -107,8 +136,8 @@ async function onSubmit() {
             <input required type="date" name="birthday" id="birthday" v-model="state.birthday" />
           </div>
           <div class="register-condition">
-            <label for="codition">CGV / CGU</label>
-            <input required type="checkbox" name="condition" id="condition" v-model="state.condition" />
+            <label class="highlight-label" @click="popup()">CGV / CGU</label>
+            <input type="checkbox" name="condition" id="condition" :checked="state.condition" />
           </div>
         </div>
         <div class="register-button">
@@ -117,9 +146,96 @@ async function onSubmit() {
       </form>
       <img src="../../public/pictures/auth/auth.svg" alt="" />
     </div>
+    <el-dialog v-model="dialogVisible" title="Informations CGV /  CGU" width="600">
+      <div>
+        <h3>Introduction</h3>
+        <p>Nous vous remercions de l'intérêt que vous portez à notre site web de réservation de tables. La protection de
+          vos données personnelles est une priorité pour nous. Cette charte explique comment nous collectons, utilisons,
+          stockons et protégeons vos informations personnelles, conformément au Règlement Général sur la Protection des
+          Données (RGPD).</p>
+
+        <h3>1. Collecte des Données Personnelles</h3>
+        <p>Lors de la création de votre compte utilisateur, nous collectons les informations suivantes :</p>
+        <p>Nom</p>
+        <p>Prénom</p>
+        <p>Adresse email</p>
+        <p>Mot de passe</p>
+
+
+        <h3>2. Utilisation des Données</h3>
+        <p>Les données collectées sont utilisées pour les finalités suivantes :</p>
+        <p>Création et gestion de votre compte utilisateur</p>
+        <p>Réservation de tables dans les restaurants partenaires</p>
+        <p>Communication avec vous concernant vos réservations et notre service</p>
+
+        <h3>3. Base Légale du Traitement</h3>
+        <p>Le traitement de vos données personnelles repose sur les bases légales suivantes :</p>
+
+        <p>Exécution d'un contrat (pour la gestion de votre compte et la réservation de tables)</p>
+        <p>Consentement (pour l'utilisation de vos données à des fins de communication)</p>
+
+
+        <h3>4. Stockage des Données</h3>
+        <p>Vos données personnelles sont stockées de manière sécurisée et ne sont accessibles qu'aux personnes
+          autorisées. Nous mettons en place des mesures techniques et organisationnelles pour protéger vos données
+          contre toute perte, accès non autorisé ou divulgation.</p>
+
+        <h3>5. Durée de Conservation</h3>
+        <p>Vos données personnelles sont conservées aussi longtemps que votre compte est actif. En cas de suppression de
+          votre compte, vos données seront supprimées dans un délai de 30 jours, sauf si une obligation légale nous
+          impose de les conserver plus longtemps.</p>
+
+        <h3>6. Droits des Utilisateurs</h3>
+        <p>Conformément au RGPD, vous disposez des droits suivants concernant vos données personnelles :</p>
+
+        <p>Droit d'accès : vous pouvez demander à consulter les données que nous détenons sur vous.</p>
+        <p>Droit de rectification : vous pouvez demander la correction de vos données personnelles si elles sont
+          incorrectes ou incomplètes.</p>
+        <p>Droit à l'effacement : vous pouvez demander la suppression de vos données personnelles.</p>
+        <p>Droit à la limitation du traitement : vous pouvez demander la limitation du traitement de vos données
+          personnelles.</p>
+        <p>Droit à la portabilité : vous pouvez demander à recevoir vos données personnelles dans un format structuré
+          et couramment utilisé.</p>
+        <p>Droit d'opposition : vous pouvez vous opposer au traitement de vos données personnelles dans certaines
+          circonstances.</p>
+
+        <p>Pour exercer ces droits, vous pouvez nous contacter à l'adresse suivante : <a
+            href="mailto:[adresse email de contact]">[adresse email de contact]</a>.</p>
+
+        <h3>7. Sécurité des Données</h3>
+        <p>Nous prenons la sécurité de vos données très au sérieux et utilisons des protocoles de sécurité avancés pour
+          protéger vos informations personnelles. Nos systèmes sont régulièrement mis à jour pour prévenir les failles
+          de sécurité.</p>
+
+        <h3>8. Modifications de la Charte</h3>
+        <p>Nous nous réservons le droit de modifier cette charte à tout moment. Toute modification sera publiée sur
+          cette page et, si les changements sont significatifs, nous vous en informerons par email.</p>
+        <h3>9. Contact</h3>
+        <p>
+          Pour toute question ou préoccupation concernant cette charte ou la manière dont nous traitons vos données
+          personnelles, veuillez nous contacter à : [adresse email de contact].
+        </p>
+
+        <h3>Conclusion</h3>
+        <p>
+          Nous nous engageons à protéger vos données personnelles et à respecter vos droits en matière de protection des
+          données. En utilisant notre site web et en créant un compte utilisateur, vous acceptez les termes de cette
+          charte RGPD.
+        </p>
+
+        <p>Merci pour votre confiance.</p>
+      </div>
+      <template #footer>
+        <div class="dialog-footer">
+          <el-button @click=cancelDialog>refuser</el-button>
+          <el-button type="primary" @click="confirmDialog">
+            Confirm
+          </el-button>
+        </div>
+      </template>
+    </el-dialog>
   </div>
 </template>
-
 <style scoped>
 .register-page {
   display: flex;
@@ -192,6 +308,19 @@ async function onSubmit() {
   margin-bottom: 2px;
   accent-color: #6e8b3d;
   cursor: pointer;
+}
+
+.highlight-label {
+  text-decoration: underline;
+  padding: 5px;
+  border-radius: 3px;
+  transition: background-color 0.3s;
+}
+
+.highlight-label:hover {
+  background-color: lightyellow;
+  cursor: pointer;
+
 }
 
 .register-button {

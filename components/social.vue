@@ -23,4 +23,19 @@
     margin-top: 10px;
     width: 33%;
 }
+
+@media (max-width: 868px) {
+    .orders h3 {
+        font-size: 16px;
+    }
+
+    .orders h4 {
+        font-size: 12px;
+    }
+
+    .btn-social {
+        width: 30%;
+        font-size: 12px;
+    }
+}
 </style>
