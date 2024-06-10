@@ -105,13 +105,14 @@ const navigateToRestaurant = (id) => {
                     <div class="restaurants-wrapper">
                         <div v-if="error" class="error">{{ error }}</div>
                         <div v-else-if="restaurants.length === 0" class="no-results">No restaurants found</div>
-                        <div v-else>
+                        <div style="display: flex;" v-else>
                             <div v-for="restaurant in restaurants" :key="restaurant.id" class="restaurant"
                                 @click="navigateToRestaurant(restaurant.id)">
                                 <div>
                                     <p><span>★</span> {{ restaurant.rating }}</p>
                                 </div>
-                                <img src="http://localhost:3333/restaurants/test.jpg" :alt="restaurant.name">
+                                <img :src="`http://localhost:3333/${restaurant.id}/${restaurant.firstImage}`"
+                                    :alt="restaurant.name">
                                 <h3>{{ restaurant.name }}</h3>
                                 <p>{{ restaurant.address }}</p>
                                 <span class="status">{{ getStatusText(restaurant.status) }}</span>
@@ -272,7 +273,8 @@ select option {
 }
 
 .restaurant img {
-    width: 100%;
+    width: 260px;
+    height: 150px;
 }
 
 .restaurant div {

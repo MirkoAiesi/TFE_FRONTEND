@@ -1,5 +1,9 @@
 <script setup>
 import { ref } from "vue";
+
+definePageMeta({
+    middleware: 'admin-guard'
+});
 const currentView = ref("orders");
 
 function setCurrentView(view) {
@@ -25,13 +29,9 @@ function setCurrentView(view) {
                     <p :class="{ activeParams: currentView === 'review' }" @click="setCurrentView('review')">
                         Modération avis
                     </p>
-                    <p :class="{ activeParams: currentView === 'settings' }" @click="setCurrentView('settings')">
-                        Paramètres
-                    </p>
 
                 </div>
                 <Review v-if="currentView === 'review'" />
-                <UserParams v-if="currentView === 'settings'" />
                 <RestaurantList v-if="currentView === 'restaurant'" />
             </section>
         </div>

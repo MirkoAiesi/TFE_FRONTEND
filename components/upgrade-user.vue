@@ -86,7 +86,7 @@ const handleUpgrade = (price: number) => {
                 <el-button type="success" @click="handleUpgrade(9.99)">Upgrade</el-button>
             </div>
         </div>
-        <el-dialog v-model="dialogVisible" title="Tips" width="500">
+        <el-dialog v-model="dialogVisible" title="Réservation" width="500">
             <p>Résumé de la réservation : {{ numberOfPersons }} personne(s) | {{ reservationDate }} | {{ arrivalTime }}
             </p>
             <label><input type="checkbox" name="option1"> Terrasse</label><br>

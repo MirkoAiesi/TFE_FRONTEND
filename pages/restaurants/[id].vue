@@ -3,12 +3,13 @@ import { ref, computed, onMounted, } from 'vue'
 import { useRestaurant } from '../../services/useRestaurant';
 import { useRoute } from 'vue-router';
 import Cookies from "js-cookie";
-import { fetchReviewsByRestaurantId, addReview, addBooking } from '../../services/userService';
+import { fetchReviewsByRestaurantId, addReview, addBooking, updateRestaurantRating } from '../../services/userService';
 
 const route = useRoute();
 const restaurantId = parseInt(route.params.id as string, 10);
 
-const { restaurant, coordinates } = useRestaurant(restaurantId);
+const { restaurant, coordinates, files } = useRestaurant(restaurantId);
+console.log(files)
 
 const reservationDate = ref<Date>()
 const numberOfPersons = ref('2')
@@ -125,12 +126,16 @@ const availableTimes = computed(() => {
     return times;
 });
 
-const images = ref([
-    { src: "/pictures/restaurants/resto.jpg", alt: "name1" },
-    { src: "/pictures/restaurants/resto.jpg", alt: "name1" },
-    { src: "/pictures/restaurants/resto.jpg", alt: "name1" },
-    // Ajoutez autant d'images que nécessaire
-]);
+const images = ref([]);
+
+watchEffect(() => {
+    if (files.value && files.value.length > 0) {
+        images.value = files.value.map(file => ({
+            src: `http://localhost:3333/${restaurantId}/${file}`,
+            alt: restaurant.value ? restaurant.value.name : 'Restaurant image'
+        }));
+    }
+});
 
 interface User {
     firstName: String;
@@ -145,24 +150,34 @@ interface Comment {
 }
 
 const comments = ref<Comment[]>([]);
+const totalRating = ref<number | undefined>(undefined);
 let currentPage: number = 1;
 let totalPages: number = 1;
 
 const getComments = async (restaurantId: number) => {
     try {
         const response = await fetchReviewsByRestaurantId(restaurantId);
-
-        // Vérifiez si la réponse est un tableau
         if (Array.isArray(response)) {
-            comments.value = comments.value.concat(response);
+            comments.value = response;
         } else {
-            // Si la réponse est un objet unique, transformez-le en tableau
-            comments.value = comments.value.concat([response] as Comment[]);
+            comments.value = [response];
         }
+        calculateTotalRating();
     } catch (e) {
         console.error('Error getting comments:', e);
     }
 };
+const calculateTotalRating = () => {
+    if (comments.value.length === 0) {
+        totalRating.value = undefined;
+        return;
+    }
+
+    const sum = comments.value.reduce((total, comment) => total + comment.rating, 0);
+    const average = sum / comments.value.length;
+    totalRating.value = parseFloat(average.toFixed(2)); // Arrondir à 2 décimales
+};
+
 const checkScroll = () => {
     const commentContainer: HTMLElement | null = commentContainerRef.value;
     // Vérifiez si l'utilisateur a atteint le bas de la zone de défilement
@@ -215,12 +230,18 @@ const submitReview = async () => {
     };
 
     try {
-        const response = await addReview(restaurantId, review);
-        console.log('Review added:', response);
+        await addReview(restaurantId, review);
         rating.value = null;
         comment.value = '';
         errorMessage.value = null;
         getComments(parseInt(route.params.id, 10));
+
+        await getComments(restaurantId);
+
+        if (totalRating.value !== undefined && totalRating.value !== null) {
+            await updateRestaurantRating(restaurantId, totalRating.value);
+            console.log(`Restaurant rating updated to ${totalRating.value}`);
+        }
     } catch (e) {
         console.error('Error adding review:', e);
         errorMessage.value = 'Erreur lors de l\'ajout de l\'avis.';
@@ -241,6 +262,16 @@ const isMobile = ref(false);
 const updateIsMobile = () => {
     isMobile.value = window.innerWidth <= 768;
 };
+const handleMobileReservation = () => {
+    dialogVisible.value = true;
+};
+
+watchEffect(() => {
+    if (isMobile.value && arrivalTime.value) {
+        // show the button when the time is selected on mobile
+        handleMobileReservation();
+    }
+});
 const nameRegex = /^[a-zA-ZÀ-ÿ\s'-]*$/;
 const lastName = ref('');
 watch(lastName, (newValue, oldValue) => {
@@ -273,6 +304,8 @@ watch(email, (newValue, oldValue) => {
     }
 });
 
+const fidelity = ref(null)
+
 const handleSubmitBooking = async () => {
     if (!reservationDate.value) {
         console.error('Reservation date is required.');
@@ -300,6 +333,7 @@ const handleSubmitBooking = async () => {
         date_time: dateTime,
         number_people: numberOfPersons.value,
         comment: bookingParams.value,
+        fidelity: parseInt(fidelity.value)
     };
 
     try {
@@ -320,7 +354,7 @@ const handleSubmitBooking = async () => {
                 <h1>{{ restaurant?.name }}</h1>
             </header>
             <section class="restaurant-info">
-                <el-rate v-model="value" size="large" disabled show-score :colors=colors text-color="#6e8b3d"
+                <el-rate v-model="totalRating" size="large" disabled show-score :colors=colors text-color="#6e8b3d"
                     score-template="{value} points" />
                 <div class="info-row">
                     <p><strong>Horaires:</strong></p>
@@ -393,16 +427,22 @@ const handleSubmitBooking = async () => {
                             <p><strong>Animaux accepté:</strong> {{ animalAccepted }}</p>
                             <p><strong>Terrasse:</strong> {{ terrace }}</p>
                             <p><strong>Payements autorisés:</strong> {{ payments.join(', ') }}</p>
-                            <div style="display: flex;width: 100%;">
-                                <NuxtLink to="../search"><img src="/public/pictures/facebook.png" alt="facebook"
-                                        style="width: 30px; margin:10px;">
-                                </NuxtLink>
-                                <NuxtLink to="../search"><img src="/public/pictures/instagram.png" alt="instagram"
-                                        style="width: 30px; margin:10px;">
-                                </NuxtLink>
-                                <NuxtLink to="../search"><img src="/public/pictures/website.png" alt="website"
-                                        style="width: 30px; margin:10px;">
-                                </NuxtLink>
+                            <div style="display: flex; width: 100%;">
+                                <a v-if="restaurant?.facebook" :href="restaurant.facebook" target="_blank"
+                                    rel="noopener noreferrer">
+                                    <img src="/public/pictures/facebook.png" alt="facebook"
+                                        style="width: 30px; margin: 10px;">
+                                </a>
+                                <a v-if="restaurant?.instagram" :href="restaurant.instagram" target="_blank"
+                                    rel="noopener noreferrer">
+                                    <img src="/public/pictures/instagram.png" alt="instagram"
+                                        style="width: 30px; margin: 10px;">
+                                </a>
+                                <a v-if="restaurant?.web" :href="restaurant.web" target="_blank"
+                                    rel="noopener noreferrer">
+                                    <img src="/public/pictures/website.png" alt="website"
+                                        style="width: 30px; margin: 10px;">
+                                </a>
                             </div>
                         </div>
                     </div>
@@ -412,7 +452,7 @@ const handleSubmitBooking = async () => {
                         <div class="block text-center">
                             <el-carousel class="custom-carousel" height="341.6px" motion-blur :autoplay="false">
                                 <el-carousel-item v-for="(image, index) in images" :key="index">
-                                    <img :src="image.src" :alt="image.alt">
+                                    <img :src="image.src" :alt="image.alt" class="carousel-image">
                                     <h3 class="small justify-center" text="2xl">{{ index }}</h3>
                                 </el-carousel-item>
                             </el-carousel>
@@ -463,7 +503,7 @@ const handleSubmitBooking = async () => {
         <h2> Avis de l'établissement </h2>
         <div class="notes-comments">
             <div class="notes">
-                <el-rate v-model="value" size="large" disabled show-score :colors="colors" text-color="#6e8b3d"
+                <el-rate v-model="totalRating" size="large" disabled show-score :colors="colors" text-color="#6e8b3d"
                     score-template="{value} points" />
                 <span>({{ comments.length }})</span>
                 <div class="rating-customer">
@@ -511,7 +551,7 @@ const handleSubmitBooking = async () => {
                 </div>
             </div>
         </div>
-        <el-dialog v-model="dialogVisible" title="Tips" width="500">
+        <el-dialog v-model="dialogVisible" title="Réservation" width="500">
             <p>Résumé de la réservation : {{ numberOfPersons }} personne(s) | {{ reservationDate
                 }} | {{ arrivalTime }}
             </p>
@@ -519,8 +559,15 @@ const handleSubmitBooking = async () => {
                 Terrasse</label> <br>
             <label v-if="animalAccepted === 'oui'"><input type="checkbox" name="option2" v-model="bookingParams.animal">
                 Chien</label>
-            <p>Demande(s) particulière(s)</p>
+            <p>Demande(s) particulièr soe(s)</p>
             <textarea v-model="specialRequest" style="resize:none; width: 100%; height: 50px; padding:5px;"></textarea>
+            <p>Choisir une réduction*</p>
+            <select id="fidelity" v-model="fidelity" style="height:20px; width:250px;">
+                <option selected value="0">Pas de réduction</option>
+                <option value="100">utiliser 100 points (5% de réduction)</option>
+                <option value="200">utiliser 200 points (10% de réduction)</option>
+                <option value="500">utiliser 500 points (5% de réduction)</option>
+            </select>
             <template #footer>
                 <div class="dialog-footer">
                     <el-button @click="dialogVisible = false">Cancel</el-button>
@@ -679,13 +726,18 @@ select {
     margin-bottom: 10px;
 }
 
+.carousel-image {
+    width: 100%;
+    height: 341.6px;
+    object-fit: cover;
+}
+
 .demonstration {
     color: var(--el-text-color-secondary);
 }
 
 .custom-carousel {
     width: 683px;
-    /* Ajustez la largeur souhaitée */
 }
 
 .el-carousel__item h3 {

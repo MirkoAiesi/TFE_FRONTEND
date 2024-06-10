@@ -1,19 +1,22 @@
 <script lang="ts" setup>
 import { ref } from 'vue';
+import { fetchUserInfo } from "../services/userService";
 
-const dialogVisible = ref(false);
-const reward = ref(750); // Valeur initiale des points
-const rewardCost = ref(0); // Variable pour stocker le coût de la récompense
+const fidelity = ref(null)
 
-const openPopup = (cost: number) => {
-    rewardCost.value = cost;
-    dialogVisible.value = true;
+const loadUserInfo = async () => {
+    try {
+        const data = await fetchUserInfo();
+        console.log('Fetched user info:', data);
+        fidelity.value = data.fidelity;
+    } catch (error) {
+        console.error('Failed to load user info:', error);
+    }
 };
 
-const confirmTransaction = () => {
-    reward.value -= rewardCost.value;
-    dialogVisible.value = false;
-};
+onMounted(() => {
+    loadUserInfo();
+});
 </script>
 
 <template>
@@ -22,48 +25,20 @@ const confirmTransaction = () => {
             en utilisant BetterRestaurant.
         </h3>
         <br>
-        <p> Vous accumez actuellement {{ reward }} point(s)</p>
+        <h4> Vous accumullez actuellement {{ fidelity }} point(s)</h4>
         <br>
-        <p> Pour rappel : </p>
+        <h4> Pour rappel : </h4>
         <p>Une réservation = 20 points de fidélité</p>
         <p>Un avis sur un restaurant où vous avez mangé = 5 points de fidélité</p>
-        <div class="payement-container">
-            <div class="payement">
-                <h4>Bon 5 % de réduction </h4>
-                <p>100 points</p>
-                <el-button type="success" @click="openPopup(100)" :disabled="reward < 100">
-                    Utiliser
-                </el-button>
-            </div>
-            <div class="payement">
-                <h4>Bon 10 % de réduction</h4>
-                <p>200 points</p>
-                <el-button type="success" @click="openPopup(200)" :disabled="reward < 200">
-                    Utiliser
-                </el-button>
-            </div>
-            <div class="payement">
-                <h4>Bon 20 % de réduction</h4>
-                <p>500 points</p>
-                <el-button type="success" @click="openPopup(500)" :disabled="reward < 500">
-                    Utiliser
-                </el-button>
-            </div>
-        </div>
-        <el-dialog v-model="dialogVisible" title="Récompense" width="500">
-            <p>Êtes-vous sûr de dépenser {{ rewardCost }} points ?</p>
-            <p>Il vous restera {{ reward - rewardCost }} points après cette transaction.</p>
-            <template #footer>
-                <div class="dialog-footer">
-                    <el-button type="danger" @click="dialogVisible = false">
-                        Refuser
-                    </el-button>
-                    <el-button type="primary" @click="confirmTransaction">
-                        Confirmer
-                    </el-button>
-                </div>
-            </template>
-        </el-dialog>
+        <br>
+        <p>Quand vous obtener 100 point lors de votre prochaine réservation vous pouvez décider de les dépenser pour
+            avoir une réduction de 5% dans le restaurant</p>
+        <br>
+        <p>Quand vous obtener 200 point lors de votre prochaine réservation vous pouvez décider de les dépenser pour
+            avoir une réduction de 10% dans le restaurant</p>
+        <br>
+        <p>Quand vous obtener 500 point lors de votre prochaine réservation vous pouvez décider de les dépenser pour
+            avoir une réduction de 20% dans le restaurant</p>
     </div>
 </template>
 

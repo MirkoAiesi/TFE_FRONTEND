@@ -24,12 +24,11 @@ const toggleDay = (index: number) => {
 const restaurantName = ref('');
 const address = ref('');
 const phone = ref('');
-const desc = ref('test');
 const cookingType = ref('');
 const price = ref('');
 const cultery = ref(1);
 const rating = ref(0);
-const status = ref(2);
+const status = ref(10);
 
 const isBreak = ref(false);
 const breakTime = ref(['', '']);
@@ -121,7 +120,6 @@ const handleAddRestaurant = async () => {
         name: restaurantName.value,
         address: address.value,
         phone: phone.value,
-        desc: desc.value,
         status: status.value,
         cooking_type: cookingType.value,
         price: price.value,

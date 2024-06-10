@@ -86,11 +86,11 @@ const formattedConfirmedBookings = computed(() => {
 
 <template>
     <div class="container orders">
-        <h4 style="margin-top:15px;">Reservation(s) confirmée(s) </h4>
+        <h4 style="margin-top:15px;">Historique des réservations </h4>
         <el-table :data="formattedConfirmedBookings" class="custom-table" style="width: 100%; height: 50%;">
             <el-table-column label="Date (aaaa/mm/jj)" prop="date" />
             <el-table-column label="Heure" prop="time" />
-            <el-table-column label="Nom" prop="userId" />
+            <el-table-column label="Nom" prop="user_name" />
             <el-table-column label="Couverts" prop="number_people" />
             <el-table-column align="right">
                 <template #default="scope">

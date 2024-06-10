@@ -1,6 +1,6 @@
 <script lang="ts" setup>
 import { ref, watch, onMounted } from 'vue';
-import { modifyUserProfile, modifyUserPassword, fetchUserInfo } from '../services/userService'; // Assurez-vous que ce chemin est correct
+import { modifyUserProfile, modifyUserPassword, fetchUserInfo, deleteAccount } from '../services/userService'; // Assurez-vous que ce chemin est correct
 import eventBus from '../services/eventBus'; // Importez l'EventBus
 import { ElMessage } from 'element-plus'; // Importez ElMessage pour afficher les messages d'erreur
 
@@ -111,7 +111,21 @@ watch(lastName, (newValue, oldValue) => {
         });
     }
 });
-
+const handleDeleteAccount = async () => {
+    try {
+        const confirmation = confirm('Are you sure you want to delete your account? This action cannot be undone.');
+        if (confirmation) {
+            const response = await deleteAccount();
+            console.log(response);
+            alert('Account deleted successfully');
+            // Rediriger l'utilisateur après la suppression du compte
+            navigateTo('/');
+        }
+    } catch (error) {
+        console.error('Failed to delete account:', error);
+        alert('Failed to delete account');
+    }
+};
 onMounted(() => {
     loadUserInfo();
 });
@@ -157,7 +171,8 @@ onMounted(() => {
         </form>
         <el-divider />
         <div class="paramsOptions">
-            <el-button size="large" class="paramsButton" type="danger" round>Supprimer le compte</el-button>
+            <el-button size="large" class="paramsButton" type="danger" round @click="handleDeleteAccount">Supprimer le
+                compte</el-button>
         </div>
     </div>
 </template>

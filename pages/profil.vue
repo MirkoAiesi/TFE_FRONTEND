@@ -1,8 +1,8 @@
 <script setup>
 import { ref, onMounted, watch } from "vue";
 import Cookies from "js-cookie";
-import { fetchUserInfo } from "../services/userService"; // Assurez-vous que ce chemin est correct
-import eventBus from '../services/eventBus'; // Importez l'EventBus
+import { fetchUserInfo } from "../services/userService";
+import eventBus from '../services/eventBus';
 
 
 const currentView = ref("orders");

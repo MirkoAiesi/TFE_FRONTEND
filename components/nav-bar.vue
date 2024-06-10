@@ -1,7 +1,8 @@
 <script lang="ts" setup>
 import { Avatar, Menu } from "@element-plus/icons-vue";
-import { ref } from "vue";
+import { ref, onMounted, computed } from "vue";
 import Cookies from "js-cookie";
+import { useReservationStore } from "../services/reservationStore";
 
 const handleProfile = () => {
   const token = Cookies.get('authBR')
@@ -15,6 +16,12 @@ const isOpen = ref(false);
 const openBurgerMenu = () => {
   isOpen.value = !isOpen.value;
 };
+const reservationStore = useReservationStore();
+const pendingBookings = computed(() => reservationStore.pendingBookings);
+console.log(pendingBookings);
+onMounted(() => {
+  reservationStore.fetchPendingBookings();
+});
 </script>
 
 <template>
@@ -28,7 +35,7 @@ const openBurgerMenu = () => {
         <p>Les restaurants</p>
       </NuxtLink>
       <NuxtLink to="../restorer">
-        <p>Restaurateurs</p>
+        <p>Restaurateurs<span v-if="pendingBookings > 0" class="badge">{{ pendingBookings }}</span></p>
       </NuxtLink>
       <NuxtLink to="/support">
         <p>Support</p>
@@ -104,6 +111,14 @@ nav div a:hover {
 
 .burger-icon {
   display: none;
+}
+
+.badge {
+  background-color: #6e8b3d;
+  color: white;
+  padding: 5px 15px;
+  border-radius: 50%;
+  margin-left: 10px;
 }
 
 @media (max-width: 868px) {

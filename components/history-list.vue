@@ -89,7 +89,7 @@ const formattedConfirmedBookings = computed(() => {
         <el-table :data="formattedConfirmedBookings" style="width: 100%">
             <el-table-column label="Date (aaaa/mm/jj)" prop="date" />
             <el-table-column label="Heure" prop="time" />
-            <el-table-column label="Restaurant" prop="restaurantId" />
+            <el-table-column label="Restaurant" prop="restaurant_name" />
             <el-table-column label="Couverts" prop="number_people" />
         </el-table>
     </div>

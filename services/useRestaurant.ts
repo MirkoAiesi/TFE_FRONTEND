@@ -6,13 +6,15 @@ import { getCoordinates } from '../services/getCoordinates';
 export function useRestaurant(id: number) {
     const restaurant = ref<Restaurant | null>(null);
     const loading = ref(true);
+    const files = ref([])
     const error = ref<string | null>(null);
     const coordinates = ref<{ lat: number, lon: number } | null>(null);
 
     const fetchRestaurant = async () => {
         try {
             const response = await fetchRestaurantById(id);
-            restaurant.value = response as Restaurant;
+            files.value = response.files
+            restaurant.value = response.restaurant as Restaurant;
 
             // Obtenez les coordonnées de l'adresse du restaurant
             if (restaurant.value) {
@@ -37,5 +39,6 @@ export function useRestaurant(id: number) {
         coordinates,
         loading,
         error,
+        files
     };
 }

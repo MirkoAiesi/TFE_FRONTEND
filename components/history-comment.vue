@@ -1,78 +1,93 @@
 <script lang="ts" setup>
-import { ref, computed } from 'vue'
+import { ref, onMounted } from 'vue';
+import { fetchReviewsByUserId, fetchUserInfo, deleteReview } from '../services/userService';
 
-const currentReview = ref('');
-const dialogVisible = ref(false)
-const popup = (review: string) => {
-
-    dialogVisible.value = true
-    currentReview.value = review;
-
-};
-interface User {
-    resto: string
-    star: number
-    review: string
-
+interface Review {
+    id: number; // Ajoutez l'ID de l'avis pour pouvoir le supprimer
+    userId: number;
+    restaurantId: number;
+    rating: number;
+    comment: string;
 }
-const search = ref('')
-const filterTableData = computed(() =>
-    tableData.filter(
-        (data) =>
-            !search.value ||
-            data.resto.toLowerCase().includes(search.value.toLowerCase())
-    )
-)
-const tableData: User[] = [
-    {
 
-        resto: 'Beaumontgrill',
-        star: 1,
-        review: 'Lorem ipsum dolor sit amet, consectetur adipiscing elit. Quisque sit amet accumsan tortor. Sed ullamcorper, elit ut bibendum viverra, justo purus consequat erat, id venenatis tortor eros at enim. Vivamus a libero ac nisi bibendum ultricies. Vivamus sit amet pulvinar nulla, in feugiat eros. Proin posuere leo at arcu accumsan, eu varius erat cursus.',
+const userId = ref<number | null>(null);
+const reviews = ref<Review[]>([]);
+const currentReview = ref<Review | null>(null);
+const dialogVisible = ref(false);
+const isLoading = ref(true);
+const error = ref<string | null>(null);
 
-    },
-    {
-        resto: 'Lac bbc',
-        star: 5,
-        review: 'gourmand',
+const popup = (review: Review) => {
+    dialogVisible.value = true;
+    currentReview.value = review;
+};
 
-    },
-]
 const truncateReview = (review: string) => {
     if (review.length > 60) {
         return review.substring(0, 60) + '...';
     }
     return review;
 };
+
+const handleDelete = async () => {
+    if (!currentReview.value) return;
+
+    try {
+        await deleteReview(currentReview.value.id);
+        reviews.value = reviews.value.filter(review => review.id !== currentReview.value!.id);
+        dialogVisible.value = false;
+    } catch (e) {
+        error.value = 'Failed to delete review';
+        console.error('Error:', e);
+    }
+};
+
+
+onMounted(async () => {
+    try {
+        const user = await fetchUserInfo();
+        userId.value = user.id;
+        if (userId.value) {
+            reviews.value = await fetchReviewsByUserId(userId.value);
+        }
+    } catch (e) {
+        error.value = 'Failed to fetch authenticated user or reviews';
+        console.error('Error:', e);
+    } finally {
+        isLoading.value = false;
+    }
+});
 </script>
 <template>
     <div class="container orders">
-        <h4 style="margin-top:15px;">Consultation des commentaires </h4>
-        <el-table :data="filterTableData" style="width: 100%">
-            <el-table-column label="Restaurant" prop="resto" />
-            <el-table-column label="étoiles" prop="star" />
+        <h4 style="margin-top:15px;">Modération des commentaires</h4>
+        <el-table v-if="!isLoading && !error" :data="reviews" style="width: 100%">
+            <el-table-column label="Restaurant" prop="restaurant_name" />
+            <el-table-column label="étoiles" prop="rating" />
             <el-table-column label="Avis">
                 <template #default="scope">
-                    <span>{{ truncateReview(scope.row.review) }}</span>
+                    <span>{{ truncateReview(scope.row.comment) }}</span>
                 </template>
             </el-table-column>
             <el-table-column align="right">
-                <template #header>
-                    <el-input v-model="search" size="small" placeholder="Recherche restaurant" />
-                </template>
                 <template #default="scope">
-                    <el-button size="small" type="primary" @click=popup(scope.row.review)>
+                    <el-button size="small" type="primary" @click="popup(scope.row)">
                         Voir
                     </el-button>
                 </template>
             </el-table-column>
         </el-table>
+        <div v-if="isLoading">Loading...</div>
+        <div v-else-if="error">{{ error }}</div>
         <el-dialog v-model="dialogVisible" title="Commentaire" width="500">
-            <span>{{ currentReview }}</span>
+            <span>{{ currentReview?.comment }}</span>
             <template #footer>
                 <div class="dialog-footer">
-                    <el-button type="danger" @click="dialogVisible = false">
+                    <el-button type="danger" @click="handleDelete">
                         Supprimer
+                    </el-button>
+                    <el-button @click="dialogVisible = false">
+                        Annuler
                     </el-button>
                 </div>
             </template>

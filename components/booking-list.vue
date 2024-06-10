@@ -118,15 +118,14 @@ const cancel = async () => {
         <el-table :data="formattedPendingBookings" style="width: 100%">
             <el-table-column label="Date (aaaa/mm/jj)" prop="date" />
             <el-table-column label="Heure" prop="time" />
-            <el-table-column label="Restaurant" prop="restaurantId" />
+            <el-table-column label="Restaurant" prop="restaurant_name" />
             <el-table-column label="Couverts" prop="number_people" />
         </el-table>
-
         <h4 style="margin-top:15px;">Reservation(s) confirmée(s) </h4>
         <el-table :data="formattedConfirmedBookings" style="width: 100%">
             <el-table-column label="Date" prop="date" />
             <el-table-column label="Heure" prop="time" />
-            <el-table-column label="Restaurant" prop="restaurantId" />
+            <el-table-column label="Restaurant" prop="restaurant_name" />
             <el-table-column label="Couverts" prop="number_people" />
             <el-table-column align="right">
                 <template #default="scope">

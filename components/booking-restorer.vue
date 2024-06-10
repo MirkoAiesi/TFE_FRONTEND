@@ -12,6 +12,7 @@ interface BookingInfo {
     number_people: string;
     userId: number;
     status: number;
+    fidelity: number;
 }
 
 const bookingInfo = ref<BookingInfo[]>([]);
@@ -117,8 +118,9 @@ const formatComment = (comment: Record<string, any>): string[] => {
         <el-table :data="formattedPendingBookings" style="width: 100%; height: 50%;">
             <el-table-column label="Date (aaaa/mm/jj)" prop="date" />
             <el-table-column label="Heure" prop="time" />
-            <el-table-column label="Nom" prop="userId" />
+            <el-table-column label="Nom" prop="user_name" />
             <el-table-column label="Couverts" prop="number_people" />
+            <el-table-column label="Réduction" prop="fidelity" />
             <el-table-column align="right">
                 <template #default="scope">
                     <el-button size="small" type="success" @click="popup(scope.row)">
@@ -132,8 +134,9 @@ const formatComment = (comment: Record<string, any>): string[] => {
         <el-table :data="formattedConfirmedBookings" class="custom-table" style="width: 100%; height: 50%;">
             <el-table-column label="Date" prop="date" />
             <el-table-column label="Heure" prop="time" />
-            <el-table-column label="Nom" prop="userId" />
+            <el-table-column label="Nom" prop="user_name" />
             <el-table-column label="Couverts" prop="number_people" />
+            <el-table-column label="Réduction" prop="fidelity" />
             <el-table-column align="right">
                 <template #default="scope">
                     <span v-if="scope.row.status === 2" class="cancelled-message">Annulé par le client</span>
