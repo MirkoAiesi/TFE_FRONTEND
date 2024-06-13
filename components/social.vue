@@ -3,10 +3,6 @@ import { ref, onMounted } from 'vue';
 import { updateRestaurantSocialLinks } from '../services/userService';
 import { useRestaurantStore } from '../services/restaurantStore';
 
-definePageMeta({
-    middleware: 'info-restaurant'
-})
-
 const restaurantStore = useRestaurantStore();
 const restaurant = restaurantStore.restaurant;
 
@@ -32,13 +28,6 @@ const updateSocialLinks = async () => {
     }
 };
 
-onMounted(() => {
-    if (restaurant) {
-        console.log(`Restaurant ID: ${restaurant.value.id}`);
-    } else {
-        console.error('Restaurant is not set on mount');
-    }
-});
 onMounted(() => {
     if (restaurant.value) {
         facebook.value = restaurant.value.facebook || '';

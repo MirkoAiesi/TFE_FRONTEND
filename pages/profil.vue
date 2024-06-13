@@ -35,7 +35,7 @@ const loadUserInfo = async () => {
 
 const formatDate = (dateString) => {
     if (!dateString) return '';
-    return dateString.substring(0, 10); // Prendre les 10 premiers caractères de la chaîne
+    return dateString.substring(0, 10);
 };
 
 watch(() => eventBus.updatedProfile, (newProfile) => {
@@ -82,7 +82,7 @@ onMounted(() => {
                     <p :class="{ activeParams: currentView === 'comment' }" @click="setCurrentView('comment')">
                         Historique des commentaires</p>
                     <p :class="{ activeParams: reward === 'comment' }" @click="setCurrentView('reward')">
-                        Points de fidelité</p>
+                        Point(s) de fidelité</p>
                     <p :class="{ activeParams: currentView === 'settings' }" @click="setCurrentView('settings')">
                         Paramètres</p>
                 </div>
@@ -322,15 +322,12 @@ section {
         flex-direction: column;
         height: auto;
         padding: 0 10px;
-        /* Ajouté pour éviter que les bords ne touchent la fenêtre */
     }
 
     .orders {
         width: 90%;
-        /* Ajusté pour éviter que les bords ne touchent la fenêtre */
         margin: 0 auto;
         margin-bottom: 30px;
-        /* Ajouté pour centrer l'élément */
     }
 
     .orders .title {

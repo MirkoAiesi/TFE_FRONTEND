@@ -137,7 +137,7 @@ const cancelDialog = () => {
           </div>
           <div class="register-condition">
             <label class="highlight-label" @click="popup()">CGV / CGU</label>
-            <input type="checkbox" name="condition" id="condition" :checked="state.condition" />
+            <input type="checkbox" name="condition" id="condition" v-model="state.condition" />
           </div>
         </div>
         <div class="register-button">
@@ -160,6 +160,7 @@ const cancelDialog = () => {
         <p>Prénom</p>
         <p>Adresse email</p>
         <p>Mot de passe</p>
+        <p>Date d'anniversaire</p>
 
 
         <h3>2. Utilisation des Données</h3>

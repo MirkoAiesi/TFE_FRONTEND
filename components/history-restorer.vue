@@ -1,7 +1,7 @@
 <script lang="ts" setup>
 import { ref, onMounted, computed } from 'vue'
 import { fetchBookingsByRestaurant } from '../services/userService'
-import infoRestaurant from '../middleware/checkRestaurant' // Assurez-vous que le chemin est correct
+import infoRestaurant from '../middleware/infoRestaurant'
 import { useRestaurantStore } from '../services/restaurantStore'
 
 interface BookingInfo {
@@ -15,7 +15,7 @@ interface BookingInfo {
 }
 
 const bookingInfo = ref<BookingInfo[]>([]);
-const restaurantId = ref<number | null>(null); // Initialiser restaurantId
+const restaurantId = ref<number | null>(null);
 
 const normalizeBookingInfo = (data: any[]): BookingInfo[] => {
     return data.map(booking => ({
@@ -28,7 +28,7 @@ const normalizeBookingInfo = (data: any[]): BookingInfo[] => {
 
 const loadBookingInfo = async (restaurantId: number) => {
     try {
-        const data = await fetchBookingsByRestaurant(restaurantId); // Utilisation de restaurantId
+        const data = await fetchBookingsByRestaurant(restaurantId);
         console.log('Fetched booking info:', data);
         bookingInfo.value = normalizeBookingInfo(data);
     } catch (error) {
@@ -37,14 +37,13 @@ const loadBookingInfo = async (restaurantId: number) => {
 };
 
 onMounted(async () => {
-    await infoRestaurant(); // Appelez le middleware pour définir le restaurant
-    const { restaurant } = useRestaurantStore(); // Utiliser le store pour récupérer l'ID du restaurant
+    await infoRestaurant();
+    const { restaurant } = useRestaurantStore();
 
-    // Accédez correctement aux valeurs du store
-    restaurantId.value = restaurant.value?.id || null; // Assurez-vous que le store fournit l'ID du restaurant
+    restaurantId.value = restaurant.value?.id || null;
 
     if (restaurantId.value) {
-        await loadBookingInfo(restaurantId.value); // Chargez les données de réservation
+        await loadBookingInfo(restaurantId.value);
     }
 });
 
@@ -65,8 +64,8 @@ const formatBookingData = (bookings: BookingInfo[]): (BookingInfo & { date: stri
         const isoString = dateTime.toISOString();
         return {
             ...booking,
-            date: isoString.slice(0, 10), // Extract the date part
-            time: isoString.slice(11, 19) // Extract the time part
+            date: isoString.slice(0, 10),
+            time: isoString.slice(11, 19)
         };
     });
 };

@@ -74,7 +74,7 @@ watch(address, (newValue, oldValue) => {
     }
 });
 
-const isValid = ref(true);
+
 const phoneRegex = /^\d+$/;
 
 const validateInput = (event: Event) => {
@@ -181,7 +181,6 @@ const handleAddRestaurant = async () => {
                             <option value="italienne">Cuisine italienne</option>
                             <option value="mexicaine">Cuisine mexicaine</option>
                             <option value="chinoise">Cuisine chinoise</option>
-                            <!-- Ajoutez d'autres options pour les types de cuisine selon vos besoins -->
                         </select>
                     </div>
                     <div class="register-address">

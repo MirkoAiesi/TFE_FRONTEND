@@ -1,6 +1,5 @@
 <script lang="ts" setup>
 import { ref, onMounted } from 'vue'
-import { useRoute } from 'vue-router'
 import Cookies from 'js-cookie'
 import { Plus } from '@element-plus/icons-vue'
 import type { UploadProps, UploadUserFile } from 'element-plus'

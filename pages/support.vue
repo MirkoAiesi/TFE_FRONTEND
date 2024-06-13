@@ -25,20 +25,18 @@ const sendSupportRequest = () => {
         });
         return;
     }
-    // Code pour envoyer la demande de support
-    console.log('Support request sent:', {
-        name: lastName.value,
-        firstName: firstName.value,
-        email: email.value,
-        issueType: issueType.value,
-        mailTitle: mailTitle.value,
-        mailDetails: mailDetails.value,
-    });
+
+    const subject = encodeURIComponent(mailTitle.value);
+    const body = encodeURIComponent(`Nom: ${lastName.value}\nPrénom: ${firstName.value}\nEmail: ${email.value}\nType de Problème: ${issueType.value}\n\nDétails:\n${mailDetails.value}`);
+    const mailtoLink = `mailto:support@BR.com?subject=${subject}&body=${body}`;
+
+    window.location.href = mailtoLink;
+
     ElMessage({
         type: 'success',
         message: 'Votre demande de support a été envoyée avec succès.',
     });
-    // Réinitialiser le formulaire
+
     lastName.value = '';
     firstName.value = '';
     email.value = '';
@@ -47,7 +45,6 @@ const sendSupportRequest = () => {
     mailDetails.value = '';
 };
 
-// Watchers pour nettoyer les entrées utilisateur en temps réel
 const nameRegex = /^[a-zA-ZÀ-ÿ\s'-]*$/;
 
 watch(firstName, (newValue, oldValue) => {
@@ -93,6 +90,7 @@ watch(email, (newValue, oldValue) => {
     }
 });
 </script>
+
 <template>
     <div class="support-container">
         <h2>Contactez le Support</h2>
@@ -126,7 +124,7 @@ watch(email, (newValue, oldValue) => {
                 <textarea v-model="mailDetails" id="mailDetails" rows="5" required></textarea>
             </div>
             <div class="form-group button-group">
-                <el-button type="primary" round>envoyer</el-button>
+                <el-button @click="sendSupportRequest" type="primary" round>envoyer</el-button>
             </div>
         </form>
     </div>

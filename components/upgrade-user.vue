@@ -1,18 +1,5 @@
 <script lang="ts" setup>
-import { ref } from 'vue'
-import { useRouter } from 'vue-router'
 import Cookies from 'js-cookie'
-
-const dialogVisible = ref(false)
-const reservationDate = ref<string | null>(null)
-const numberOfPersons = ref<string>('2')
-const arrivalTime = ref<string>('12:00')
-
-const popup = () => {
-    dialogVisible.value = true
-}
-
-const router = useRouter()
 
 const createCheckoutSession = async (price: number) => {
     const token = Cookies.get('authBR')
@@ -25,10 +12,10 @@ const createCheckoutSession = async (price: number) => {
                 'Authorization': `Bearer ${token}`,
             },
             body: JSON.stringify({
-                amount: price * 100, // Stripe expects the amount in cents
+                amount: price * 100,
                 currency: 'eur',
-                successUrl: 'http://localhost:3000/success',
-                cancelUrl: 'http://localhost:3000/cancel',
+                successUrl: 'http://localhost:3000/payements/success',
+                cancelUrl: 'http://localhost:3000/payements/cancel',
                 items: [
                     { name: 'Premium Subscription', price: price * 100, quantity: 1 },
                 ],
@@ -38,7 +25,7 @@ const createCheckoutSession = async (price: number) => {
         const data = await response.json()
 
         if (data.url) {
-            window.location.href = data.url // Redirection vers la page de paiement Stripe
+            window.location.href = data.url
         } else {
             console.error('Error creating checkout session:', data)
         }
@@ -86,24 +73,6 @@ const handleUpgrade = (price: number) => {
                 <el-button type="success" @click="handleUpgrade(9.99)">Upgrade</el-button>
             </div>
         </div>
-        <el-dialog v-model="dialogVisible" title="Réservation" width="500">
-            <p>Résumé de la réservation : {{ numberOfPersons }} personne(s) | {{ reservationDate }} | {{ arrivalTime }}
-            </p>
-            <label><input type="checkbox" name="option1"> Terrasse</label><br>
-            <label><input type="checkbox" name="option2"> Chien</label>
-            <p>Demande(s) particulière(s)</p>
-            <textarea style="resize:none; width: 100%; height: 50px;"></textarea>
-            <template #footer>
-                <div class="dialog-footer">
-                    <el-button type="danger" @click="dialogVisible = false">
-                        Refuser
-                    </el-button>
-                    <el-button type="primary" @click="dialogVisible = false">
-                        Confirmer
-                    </el-button>
-                </div>
-            </template>
-        </el-dialog>
     </div>
 </template>
 <style scoped>

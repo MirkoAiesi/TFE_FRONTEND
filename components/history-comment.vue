@@ -3,7 +3,7 @@ import { ref, onMounted } from 'vue';
 import { fetchReviewsByUserId, fetchUserInfo, deleteReview } from '../services/userService';
 
 interface Review {
-    id: number; // Ajoutez l'ID de l'avis pour pouvoir le supprimer
+    id: number;
     userId: number;
     restaurantId: number;
     rating: number;
@@ -60,7 +60,7 @@ onMounted(async () => {
 </script>
 <template>
     <div class="container orders">
-        <h4 style="margin-top:15px;">Modération des commentaires</h4>
+        <h4 style="margin-top:15px;">Historique des commentaires</h4>
         <el-table v-if="!isLoading && !error" :data="reviews" style="width: 100%">
             <el-table-column label="Restaurant" prop="restaurant_name" />
             <el-table-column label="étoiles" prop="rating" />

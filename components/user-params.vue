@@ -1,12 +1,11 @@
 <script lang="ts" setup>
 import { ref, watch, onMounted } from 'vue';
-import { modifyUserProfile, modifyUserPassword, fetchUserInfo, deleteAccount } from '../services/userService'; // Assurez-vous que ce chemin est correct
-import eventBus from '../services/eventBus'; // Importez l'EventBus
-import { ElMessage } from 'element-plus'; // Importez ElMessage pour afficher les messages d'erreur
+import { modifyUserProfile, modifyUserPassword, fetchUserInfo, deleteAccount } from '../services/userService';
+import eventBus from '../services/eventBus';
+import { ElMessage } from 'element-plus';
 
 const firstName = ref('');
 const lastName = ref('');
-const email = ref('');
 const currentPassword = ref('');
 const newPassword = ref('');
 const confirmPassword = ref('');
@@ -17,7 +16,6 @@ const loadUserInfo = async () => {
         console.log('Fetched user info:', data);
         firstName.value = data.firstName;
         lastName.value = data.lastName;
-        email.value = data.email;
     } catch (error) {
         console.error('Failed to load user info:', error);
     }
@@ -28,8 +26,8 @@ const updateProfile = async () => {
     try {
         await modifyUserProfile(firstName.value, lastName.value);
         console.log('Profile updated successfully');
-        await loadUserInfo(); // Recharger les infos de l'utilisateur pour mettre à jour l'affichage
-        eventBus.updatedProfile = { firstName: firstName.value, lastName: lastName.value }; // Émettre l'événement
+        await loadUserInfo();
+        eventBus.updatedProfile = { firstName: firstName.value, lastName: lastName.value };
     } catch (error) {
         console.error('Failed to update profile:', error);
     }
@@ -81,7 +79,6 @@ const updatePassword = async () => {
     }
 };
 
-// Watchers pour nettoyer les entrées utilisateur en temps réel
 const nameRegex = /^[a-zA-ZÀ-ÿ\s'-]*$/;
 
 watch(firstName, (newValue, oldValue) => {
@@ -113,17 +110,16 @@ watch(lastName, (newValue, oldValue) => {
 });
 const handleDeleteAccount = async () => {
     try {
-        const confirmation = confirm('Are you sure you want to delete your account? This action cannot be undone.');
+        const confirmation = confirm('Etes-vous sûr de supprimer votre compte ? Cette action est irréversible.');
         if (confirmation) {
             const response = await deleteAccount();
             console.log(response);
-            alert('Account deleted successfully');
-            // Rediriger l'utilisateur après la suppression du compte
+            alert('Compte supprimé');
             navigateTo('/');
         }
     } catch (error) {
         console.error('Failed to delete account:', error);
-        alert('Failed to delete account');
+        alert('Erreur lors de la suppression du compte');
     }
 };
 onMounted(() => {
@@ -145,7 +141,6 @@ onMounted(() => {
                 </div>
             </div>
             <label for="email">Adresse mail</label>
-            <input type="text" v-model="email" name="email" id="email" disabled />
             <el-button size="large" class="paramsButton" type="primary" round
                 @click="updateProfile">Modifier</el-button>
         </form>

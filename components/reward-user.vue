@@ -25,7 +25,7 @@ onMounted(() => {
             en utilisant BetterRestaurant.
         </h3>
         <br>
-        <h4> Vous accumullez actuellement {{ fidelity }} point(s)</h4>
+        <h4> Vous accumulez actuellement {{ fidelity }} point(s)</h4>
         <br>
         <h4> Pour rappel : </h4>
         <p>Une réservation = 20 points de fidélité</p>

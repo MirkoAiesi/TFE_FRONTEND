@@ -9,11 +9,10 @@ const route = useRoute();
 const restaurantId = parseInt(route.params.id as string, 10);
 
 const { restaurant, coordinates, files } = useRestaurant(restaurantId);
-console.log(files)
 
 const reservationDate = ref<Date>()
 const numberOfPersons = ref('2')
-const arrivalTime = ref('12:00')
+const arrivalTime = ref('')
 
 const colors = ref(['#FF0000', '#F7BA2A', '#6e8b3d']);
 
@@ -23,7 +22,7 @@ const checkAuth = () => {
     isAuthenticated.value = !!token;
 };
 const redirectToLogin = () => {
-    navigateTo('/auth/login') // Remplacez 'login' par le nom de votre route de connexion
+    navigateTo('/auth/login')
 };
 
 const value = ref<number | undefined>(undefined);
@@ -65,7 +64,6 @@ const parsedSchedule = computed<Schedule | null>(() => {
         if (!restaurant.value?.schedule) {
             return null;
         }
-        // Si le champ schedule est déjà un objet JSON, pas besoin de le parser à nouveau
         return restaurant.value.schedule as Schedule;
     } catch (e) {
         console.error('Error parsing schedule:', e);
@@ -73,7 +71,6 @@ const parsedSchedule = computed<Schedule | null>(() => {
     }
 });
 
-// Fonction pour capitaliser la première lettre du jour
 const capitalize = (str: string) => {
     return str.charAt(0).toUpperCase() + str.slice(1);
 };
@@ -95,13 +92,13 @@ const availableTimes = computed(() => {
     }
 
     const date = new Date(reservationDate.value);
-    const dayOfWeek = daysOfWeek[date.getDay()]; // Récupérer le jour de la semaine
+    const dayOfWeek = daysOfWeek[date.getDay()];
 
     const schedule = restaurant.value.schedule as Schedule;
     const daySchedule = schedule[dayOfWeek];
 
     if (!daySchedule || daySchedule[0] === 'fermé') {
-        return []; // Si le restaurant est fermé ce jour-là, retourner un tableau vide
+        return [];
     }
 
     const [openingTime, closingTime] = daySchedule;
@@ -151,8 +148,7 @@ interface Comment {
 
 const comments = ref<Comment[]>([]);
 const totalRating = ref<number | undefined>(undefined);
-let currentPage: number = 1;
-let totalPages: number = 1;
+
 
 const getComments = async (restaurantId: number) => {
     try {
@@ -175,28 +171,8 @@ const calculateTotalRating = () => {
 
     const sum = comments.value.reduce((total, comment) => total + comment.rating, 0);
     const average = sum / comments.value.length;
-    totalRating.value = parseFloat(average.toFixed(2)); // Arrondir à 2 décimales
+    totalRating.value = parseFloat(average.toFixed(2));
 };
-
-const checkScroll = () => {
-    const commentContainer: HTMLElement | null = commentContainerRef.value;
-    // Vérifiez si l'utilisateur a atteint le bas de la zone de défilement
-    if (
-        commentContainer &&
-        commentContainer.scrollTop + commentContainer.clientHeight >=
-        commentContainer.scrollHeight
-    ) {
-        // Vérifiez si toutes les pages ont été chargées
-        if (currentPage < totalPages) {
-            // Chargez les commentaires de la page suivante
-            currentPage++;
-            const restaurantId = parseInt(route.params.id, 10);
-            getComments(restaurantId);
-        }
-    }
-};
-
-const commentContainerRef = ref<HTMLElement | null>(null);
 
 onMounted(() => {
     const restaurantId = parseInt(route.params.id, 10);
@@ -268,39 +244,7 @@ const handleMobileReservation = () => {
 
 watchEffect(() => {
     if (isMobile.value && arrivalTime.value) {
-        // show the button when the time is selected on mobile
         handleMobileReservation();
-    }
-});
-const nameRegex = /^[a-zA-ZÀ-ÿ\s'-]*$/;
-const lastName = ref('');
-watch(lastName, (newValue, oldValue) => {
-    if (!nameRegex.test(newValue)) {
-        lastName.value = oldValue;
-        nextTick(() => {
-            ElMessage({
-                type: 'error',
-                showClose: true,
-                grouping: true,
-                message: 'Veuillez rentrer des caractères valides.',
-            });
-        });
-    }
-});
-
-const emailRegex = /^[a-zA-Z0-9@._-]*$/;
-const email = ref('');
-watch(email, (newValue, oldValue) => {
-    if (!emailRegex.test(newValue)) {
-        email.value = oldValue;
-        nextTick(() => {
-            ElMessage({
-                type: 'error',
-                showClose: true,
-                grouping: true,
-                message: 'Veuillez rentrer des caractères valides.',
-            });
-        });
     }
 });
 
@@ -314,7 +258,7 @@ const handleSubmitBooking = async () => {
 
     const selectedDate = new Date(reservationDate.value);
     const today = new Date();
-    today.setHours(0, 0, 0, 0); // Pour comparer seulement la date
+    today.setHours(0, 0, 0, 0);
 
     const [reservationHour, reservationMinute] = arrivalTime.value.split(':').map(Number);
     if (selectedDate.getDate() === today.getDate() && selectedDate.getMonth() === today.getMonth()) {
@@ -390,7 +334,6 @@ const handleSubmitBooking = async () => {
                                     <option value="8">8 personnes</option>
                                     <option value="9">9 personnes</option>
                                     <option value="10">10 personnes</option>
-                                    <!-- Ajoutez autant d'options que nécessaire -->
                                 </select>
                             </div>
                             <div class="form-group">
@@ -424,9 +367,9 @@ const handleSubmitBooking = async () => {
                             <p><strong>Téléphone:</strong> {{ restaurant?.phone }}</p>
                             <p><strong>Prix:</strong> {{ restaurant?.price }}</p>
                             <p><strong>Cuisines:</strong> {{ restaurant?.cookingType }}</p>
-                            <p><strong>Animaux accepté:</strong> {{ animalAccepted }}</p>
+                            <p><strong>Chien accepté:</strong> {{ animalAccepted }}</p>
                             <p><strong>Terrasse:</strong> {{ terrace }}</p>
-                            <p><strong>Payements autorisés:</strong> {{ payments.join(', ') }}</p>
+                            <p><strong>Payements par carte autorisée:</strong> {{ payments.join(', ') }}</p>
                             <div style="display: flex; width: 100%;">
                                 <a v-if="restaurant?.facebook" :href="restaurant.facebook" target="_blank"
                                     rel="noopener noreferrer">
@@ -508,7 +451,7 @@ const handleSubmitBooking = async () => {
                 <span>({{ comments.length }})</span>
                 <div class="rating-customer">
                     <h3>Commentaires des clients</h3>
-                    <div class="comment-container" ref="commentContainer" @scroll="checkScroll">
+                    <div class="comment-container" ref="commentContainer">
                         <ul>
                             <li v-for="(comment, index) in comments" :key="index">
                                 <p>{{ comment.comment }}</p>
@@ -559,7 +502,7 @@ const handleSubmitBooking = async () => {
                 Terrasse</label> <br>
             <label v-if="animalAccepted === 'oui'"><input type="checkbox" name="option2" v-model="bookingParams.animal">
                 Chien</label>
-            <p>Demande(s) particulièr soe(s)</p>
+            <p>Demande(s) particulière(s)</p>
             <textarea v-model="specialRequest" style="resize:none; width: 100%; height: 50px; padding:5px;"></textarea>
             <p>Choisir une réduction*</p>
             <select id="fidelity" v-model="fidelity" style="height:20px; width:250px;">
@@ -615,7 +558,6 @@ header h1 {
 .info-row ul {
     display: flex;
     flex-wrap: wrap;
-    /* Si vous voulez qu'il passe à la ligne suivante quand il y a trop d'éléments */
     list-style: none;
     padding: 0;
     margin: 0;
@@ -627,7 +569,6 @@ header h1 {
 
 .info-row li.schedule-item {
     margin: 10px;
-    /* Espace entre les éléments */
 }
 
 .info-row p {
@@ -673,9 +614,7 @@ header h1 {
     padding: 10px;
     box-sizing: border-box;
     border: 1px solid #ddd;
-    /* Bordure grise */
     border-radius: 5px;
-    /* Coins arrondis */
 }
 
 .form-group input {
@@ -700,7 +639,6 @@ select {
     flex-flow: row wrap;
     height: 150px;
     width: 641px;
-    /* Pour centrer les boutons horizontalement */
 }
 
 .reservation-button button {
@@ -863,7 +801,6 @@ h3 {
 .progress-bar {
     height: 100%;
     background-color: #6e8b3d;
-    /* Couleur de la partie remplie de la barre */
 }
 
 .comments {
@@ -892,9 +829,7 @@ h3 {
 .comment-container {
     margin-top: 5px;
     height: 175px;
-    /* Hauteur fixe de la zone de défilement */
     overflow-y: auto;
-    /* Activer le défilement vertical */
 }
 
 .comment-container ul {
@@ -1061,7 +996,6 @@ h3 {
     .progress-bar {
         height: 100%;
         background-color: #6e8b3d;
-        /* Couleur de la partie remplie de la barre */
     }
 
     .form-group {

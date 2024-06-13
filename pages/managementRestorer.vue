@@ -39,7 +39,6 @@ const parsedSchedule = computed<Schedule | null>(() => {
         if (!restaurant.value?.schedule) {
             return null;
         }
-        // Si le champ schedule est déjà un objet JSON, pas besoin de le parser à nouveau
         return restaurant.value.schedule as Schedule;
     } catch (e) {
         console.error('Error parsing schedule:', e);
@@ -47,7 +46,6 @@ const parsedSchedule = computed<Schedule | null>(() => {
     }
 });
 
-// Fonction pour capitaliser la première lettre du jour
 const capitalize = (str: string) => {
     return str.charAt(0).toUpperCase() + str.slice(1);
 };
@@ -149,7 +147,6 @@ const orderedSchedule = computed(() => {
 .info-row ul {
     display: flex;
     flex-wrap: wrap;
-    /* Si vous voulez qu'il passe à la ligne suivante quand il y a trop d'éléments */
     list-style: none;
     padding: 0;
     margin: 0;
@@ -162,6 +159,5 @@ const orderedSchedule = computed(() => {
 
 .info-row li.schedule-item {
     margin: 10px;
-    /* Espace entre les éléments */
 }
 </style>

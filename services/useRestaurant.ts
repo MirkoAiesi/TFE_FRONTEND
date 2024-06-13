@@ -16,7 +16,6 @@ export function useRestaurant(id: number) {
             files.value = response.files
             restaurant.value = response.restaurant as Restaurant;
 
-            // Obtenez les coordonnées de l'adresse du restaurant
             if (restaurant.value) {
                 const coords = await getCoordinates(restaurant.value.address);
                 if (coords) {

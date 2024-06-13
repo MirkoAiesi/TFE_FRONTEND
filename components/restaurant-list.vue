@@ -1,6 +1,6 @@
 <script lang="ts" setup>
 import { ref, computed, onMounted } from 'vue';
-import { fetchAllRestaurants, updateRestaurantStatus } from '../services/userService';
+import { fetchAllRestaurants, updateRestaurantStatus, deleteRestaurantByAdmin } from '../services/userService';
 
 interface Restaurant {
     id: number;
@@ -58,15 +58,25 @@ const popup = (restaurant: Restaurant) => {
 
 const confirmRestaurant = async (id: number) => {
     try {
-        console.log(`Confirming restaurant with ID: ${id}`); // Ajout de logs pour déboguer
-        await updateRestaurantStatus(id, 1); // 1 pour confirmer
-        fetchData(); // Re-fetch data to update the list
+        console.log(`Confirming restaurant with ID: ${id}`);
+        await updateRestaurantStatus(id, 1);
+        fetchData();
         dialogVisible.value = false;
     } catch (error) {
         console.error('Error confirming restaurant:', error);
     }
 };
 
+const rejectRestaurant = async (id: number) => {
+    try {
+        console.log(`Rejecting restaurant with ID: ${id}`);
+        await deleteRestaurantByAdmin(id);
+        fetchData();
+        dialogVisible.value = false;
+    } catch (error) {
+        console.error('Error rejecting restaurant:', error);
+    }
+};
 interface Schedule {
     [day: string]: [string, string];
 }
@@ -136,7 +146,7 @@ const orderedSchedule = computed(() => {
             <p v-else>Aucun horaire disponible.</p>
             <template #footer>
                 <div class="dialog-footer">
-                    <el-button type="danger" @click="dialogVisible = false">Refuser</el-button>
+                    <el-button type="danger" @click="rejectRestaurant(selectedRestaurant?.id)">Refuser</el-button>
                     <el-button type="primary" @click="confirmRestaurant(selectedRestaurant?.id)">Confirmer</el-button>
                 </div>
             </template>

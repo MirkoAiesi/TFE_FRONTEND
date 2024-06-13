@@ -95,8 +95,6 @@ const cancel = async () => {
         try {
             const response = await updateBookingStatusByUser(selectedBookingToCancel.value.id, 2);
             console.log('Response from updateBookingStatusByUser:', response);
-
-            // Update the status locally only if the API call was successful
             selectedBookingToCancel.value.status = 2;
             dialogVisible.value = false;
 
@@ -114,14 +112,14 @@ const cancel = async () => {
 
 <template>
     <div class="container orders">
-        <h4>Reservation(s) en attente </h4>
+        <h4>Réservation(s) en attente </h4>
         <el-table :data="formattedPendingBookings" style="width: 100%">
             <el-table-column label="Date (aaaa/mm/jj)" prop="date" />
             <el-table-column label="Heure" prop="time" />
             <el-table-column label="Restaurant" prop="restaurant_name" />
             <el-table-column label="Couverts" prop="number_people" />
         </el-table>
-        <h4 style="margin-top:15px;">Reservation(s) confirmée(s) </h4>
+        <h4 style="margin-top:15px;">Réservation(s) confirmée(s) </h4>
         <el-table :data="formattedConfirmedBookings" style="width: 100%">
             <el-table-column label="Date" prop="date" />
             <el-table-column label="Heure" prop="time" />
@@ -130,7 +128,7 @@ const cancel = async () => {
             <el-table-column align="right">
                 <template #default="scope">
                     <template v-if="scope.row.status === 2">
-                        <span class="cancelled-message">Annuler</span>
+                        <span class="cancelled-message">Annulé</span>
                     </template>
                     <template v-else>
                         <el-button size="small" type="danger" @click="popup(scope.row)">

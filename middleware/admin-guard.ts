@@ -7,12 +7,10 @@ export default defineNuxtRouteMiddleware(async (to, from) => {
 
     await authStore.fetchUser();
 
-    // Vérifiez si l'utilisateur est connecté
     if (!authStore.isAuthenticated) {
         return nuxtApp.$router.push('/');
     }
 
-    // Vérifiez si l'utilisateur a l'autorisation
     const userId = authStore.userId;
     if (userId !== 1) {
         return nuxtApp.$router.push('/');

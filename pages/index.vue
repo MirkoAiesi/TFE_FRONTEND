@@ -24,8 +24,7 @@
           <p>
             Explorez notre sélection de restaurants triés sur le volet, offrant
             une variété de cuisines pour satisfaire tous les goûts. Utilisez nos
-            filtres avancés pour trouver l'endroit idéal, qu'il s'agisse d'un
-            restaurant étoilé, d'une brasserie cosy ou d'un bistrot de quartier.
+            filtres avancés pour trouver l'endroit idéal.
             Trouvez votre prochaine expérience gastronomique mémorable avec
             facilité.
           </p>
@@ -43,8 +42,8 @@
         <div class="bentoContainer">
           <h2>Confirmation du restaurateur</h2>
           <p>
-            Dès que le restaurateur aura validé votre réservation, vous recevrez
-            un mail de confirmation. Préparez-vous à vivre une expérience
+            Dès que le restaurateur aura validé votre réservation, celle-ci sera actualisé dans votre profil, de
+            réservation en attente à réservation confirmée. Préparez-vous à vivre une expérience
             culinaire inoubliable, avec la tranquillité d'esprit que votre table
             vous attend.
           </p>

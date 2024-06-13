@@ -4,9 +4,6 @@ import { ElMessage } from 'element-plus';
 import { modifyRestaurant, deleteRestaurant } from '../services/userService';
 import { useRestaurantStore } from '../services/restaurantStore';
 
-definePageMeta({
-    middleware: 'info-restaurant'
-})
 const { restaurant } = useRestaurantStore();
 
 const days = ref(['Lundi', 'Mardi', 'Mercredi', 'Jeudi', 'Vendredi', 'Samedi', 'Dimanche']);
@@ -143,7 +140,6 @@ const validateInput = (event: Event) => {
     phone.value = cleanedValue;
 };
 
-// Fonction pour modifier le restaurant
 const modify = async () => {
     try {
         const schedule: Schedule = {};
@@ -176,7 +172,7 @@ const modify = async () => {
             breakTime: isBreak.value ? breakTime.value : null,
             vacancyTime: vacancy.value ? vacancyTime.value : null,
         };
-        console.log('Sending data:', restaurantData); // Log les données avant l'envoi
+        console.log('Sending data:', restaurantData);
 
         const response = await modifyRestaurant(restaurantData);
         console.log('Restaurant modified:', response);
@@ -185,7 +181,7 @@ const modify = async () => {
             message: 'Restaurant modifié avec succès',
         });
     } catch (e) {
-        console.error('Error modifying restaurant:', e); // Log l'erreur complète
+        console.error('Error modifying restaurant:', e);
         ElMessage({
             type: 'error',
             message: 'Erreur lors de la modification du restaurant',
@@ -195,12 +191,11 @@ const modify = async () => {
 
 const handleDeleteRestaurant = async () => {
     try {
-        const confirmation = confirm('Are you sure you want to delete your restaurant? This action cannot be undone.');
+        const confirmation = confirm('Etes vous sûr de supprimer votre restaurant ? Cette action est irréversible.');
         if (confirmation) {
             const response = await deleteRestaurant();
             console.log(response);
-            alert('Restaurant deleted successfully');
-            // Rediriger l'utilisateur après la suppression du restaurant
+            alert('Restaurant supprimé avec succès.');
             navigateTo('/');
         }
     } catch (error) {
@@ -290,9 +285,11 @@ const handleDeleteRestaurant = async () => {
                 <label v-if="vacancy"> Plus de vacances ?<input v-if="vacancy" type="checkbox" name="noVacancy"></label>
             </div>
             <el-divider />
-            <el-button size="large" class="paramsButton" type="primary" round
-                @click.prevent="modify">Modifier</el-button>
-            <el-divider />
+            <div class="register-date">
+                <el-button size="large" class="paramsButton" type="primary" round
+                    @click.prevent="modify">Modifier</el-button>
+                <el-divider />
+            </div>
             <div class="paramsOptions">
                 <el-button size="large" class="paramsButton" type="danger" round
                     @click="handleDeleteRestaurant">Supprimer
@@ -352,6 +349,7 @@ form input[type=checkbox] {
 .paramsButton {
     margin-top: 20px;
     width: fit-content;
+    justify-content: center;
 }
 
 .paramsOptions {

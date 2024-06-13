@@ -1,7 +1,7 @@
 <script lang="ts" setup>
 import { ref, onMounted, computed } from 'vue'
-import { fetchBookingsByRestaurant, updateBookingStatus } from '../services/userService'
-import infoRestaurant from '../middleware/checkRestaurant' // Assurez-vous que le chemin est correct
+import { fetchBookingsByRestaurant, updateBookingStatus, deleteBooking } from '../services/userService'
+import infoRestaurant from '../middleware/infoRestaurant'
 import { useRestaurantStore } from '../services/restaurantStore'
 
 interface BookingInfo {
@@ -17,7 +17,7 @@ interface BookingInfo {
 
 const bookingInfo = ref<BookingInfo[]>([]);
 const selectedBooking = ref<BookingInfo | null>(null);
-const restaurantId = ref<number | null>(null); // Initialiser restaurantId
+const restaurantId = ref<number | null>(null);
 
 const normalizeBookingInfo = (data: any[]): BookingInfo[] => {
     return data.map(booking => ({
@@ -85,15 +85,27 @@ const popup = (booking: BookingInfo) => {
 const confirmBooking = async () => {
     if (selectedBooking.value) {
         try {
-            await updateBookingStatus(selectedBooking.value.id, 1);  // Appeler updateBookingStatus avec les paramètres appropriés
-            selectedBooking.value.status = 1;  // Mettre à jour localement le statut de la réservation
+            await updateBookingStatus(selectedBooking.value.id, 1);
+            selectedBooking.value.status = 1;
             dialogVisible.value = false;
-            // Recharger les données pour refléter les changements
             if (restaurantId.value) {
-                await loadBookingInfo(restaurantId.value); // Assurez-vous de recharger les données avec le restaurantId
+                await loadBookingInfo(restaurantId.value);
             }
         } catch (error) {
             console.error('Error confirming booking:', error);
+        }
+    }
+};
+const rejectBooking = async () => {
+    if (selectedBooking.value) {
+        try {
+            await deleteBooking(selectedBooking.value.id);
+            dialogVisible.value = false;
+            if (restaurantId.value) {
+                await loadBookingInfo(restaurantId.value);
+            }
+        } catch (error) {
+            console.error('Error rejecting booking:', error);
         }
     }
 };
@@ -114,7 +126,7 @@ const formatComment = (comment: Record<string, any>): string[] => {
 
 <template>
     <div class="container orders">
-        <h4>Reservation(s) en attente </h4>
+        <h4>Réservation(s) en attente </h4>
         <el-table :data="formattedPendingBookings" style="width: 100%; height: 50%;">
             <el-table-column label="Date (aaaa/mm/jj)" prop="date" />
             <el-table-column label="Heure" prop="time" />
@@ -130,7 +142,7 @@ const formatComment = (comment: Record<string, any>): string[] => {
             </el-table-column>
         </el-table>
 
-        <h4 style="margin-top:15px;">Reservation(s) confirmée(s) </h4>
+        <h4 style="margin-top:15px;">Réservation(s) confirmée(s) </h4>
         <el-table :data="formattedConfirmedBookings" class="custom-table" style="width: 100%; height: 50%;">
             <el-table-column label="Date" prop="date" />
             <el-table-column label="Heure" prop="time" />
@@ -156,7 +168,7 @@ const formatComment = (comment: Record<string, any>): string[] => {
             </template>
             <template #footer>
                 <div class="dialog-footer">
-                    <el-button type="danger" @click="dialogVisible = false">
+                    <el-button type="danger" @click="rejectBooking">
                         Refuser
                     </el-button>
                     <el-button type="primary" @click="confirmBooking">

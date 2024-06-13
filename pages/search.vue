@@ -11,7 +11,6 @@ const loading = ref(false);
 const loadingResult = ref(true);
 const error = ref(null);
 
-// Références pour les filtres
 const restaurantName = ref('');
 const restaurantType = ref('');
 const restaurantPrice = ref('');
@@ -48,7 +47,6 @@ const getStatusText = (status) => {
     return status === 1 ? 'ouvert' : 'fermer';
 };
 
-// Fonction pour naviguer vers la page de détail d'un restaurant
 const navigateToRestaurant = (id) => {
     router.push(`/restaurants/${id}`);
 };
@@ -93,7 +91,6 @@ const navigateToRestaurant = (id) => {
                 </div>
                 <h2>Suggestion d'autres établissements</h2>
                 <div class="suggestions-container">
-                    <!-- Suggestions des restaurants -->
                 </div>
             </div>
         </section>
@@ -142,7 +139,6 @@ const navigateToRestaurant = (id) => {
     justify-content: center;
     margin: 50px 0;
     padding: 0 10px;
-    /* Ajouté pour ajouter des marges internes */
     box-sizing: border-box;
 }
 
@@ -235,7 +231,6 @@ select option {
     display: flex;
     justify-content: center;
     padding: 0 10px;
-    /* Ajouté pour ajouter des marges internes */
     box-sizing: border-box;
 }
 
@@ -252,7 +247,6 @@ select option {
     position: relative;
     width: 90%;
     max-width: 300px;
-    /* Réduit la taille maximale des images */
     background-color: #f0f0f0;
     padding: 20px;
     margin: 15px;
@@ -264,7 +258,6 @@ select option {
 
 .restaurant:hover {
     transform: scale(1.05);
-    /* Utilisé transform au lieu de scale */
 }
 
 .restaurant .status {
@@ -312,17 +305,13 @@ h2 {
     display: flex;
     justify-content: center;
     flex-wrap: wrap;
-    /* Ajouté pour s'assurer que les éléments s'adaptent correctement */
     box-sizing: border-box;
 }
 
 .suggestions-container .restaurant {
     min-width: 200px;
-    /* Réduit la taille minimale des images */
     max-width: 300px;
-    /* Réduit la taille maximale des images */
     margin: 10px;
-    /* Ajouté pour espacer les images */
     box-sizing: border-box;
 }
 

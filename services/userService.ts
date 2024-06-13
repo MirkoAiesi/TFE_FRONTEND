@@ -85,22 +85,22 @@ export const fetchUserInfo = async () => {
 
 export const modifyUserProfile = async (firstName: string, lastName: string) => {
   try {
-    const token = Cookies.get('authBR'); // Récupérer le token d'authentification depuis les cookies
+    const token = Cookies.get('authBR');
     if (!token) {
       throw new Error('No authentication token found');
     }
 
-    console.log('Sending PATCH request to modify user profile'); // Log pour vérifier que la requête est envoyée
+    console.log('Sending PATCH request to modify user profile');
     const response = await $fetch('http://localhost:3333/api/profile/modify', {
       method: "PATCH",
       headers: {
         "Content-Type": "application/json",
-        "Authorization": `Bearer ${token}` // Ajouter le jeton d'authentification dans les headers
+        "Authorization": `Bearer ${token}`
       },
       body: JSON.stringify({ first_name: firstName, last_name: lastName })
     });
 
-    console.log('Profile modified response:', response); // Log pour vérifier la réponse
+    console.log('Profile modified response:', response);
     return response;
   } catch (e) {
     console.error('Error modifying user profile:', e);
@@ -110,7 +110,7 @@ export const modifyUserProfile = async (firstName: string, lastName: string) => 
 
 export const modifyUserPassword = async (currentPassword: string, newPassword: string, confirmPassword: string) => {
   try {
-    const token = Cookies.get('authBR'); // Récupérer le token d'authentification depuis les cookies
+    const token = Cookies.get('authBR');
     if (!token) {
       throw new Error('No authentication token found');
     }
@@ -120,7 +120,7 @@ export const modifyUserPassword = async (currentPassword: string, newPassword: s
       method: "PATCH",
       headers: {
         "Content-Type": "application/json",
-        "Authorization": `Bearer ${token}` // Ajouter le jeton d'authentification dans les headers
+        "Authorization": `Bearer ${token}`
       },
       body: JSON.stringify({
         currentPassword: currentPassword,
@@ -241,6 +241,26 @@ export const deleteRestaurant = async () => {
     throw error;
   }
 };
+export const deleteRestaurantByAdmin = async (id: number) => {
+  const token = Cookies.get('authBR');
+  if (!token) {
+    throw new Error('No authentication token found');
+  }
+
+  try {
+    console.log('test id : ' + id)
+    await $fetch(`http://localhost:3333/api/admin/restaurants/delete/${id}`, {
+      method: 'DELETE',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`,
+      },
+    });
+  } catch (e) {
+    console.error('Error deleting restaurant:', e);
+    throw e;
+  }
+};
 export const searchRestaurants = async (filter: Object) => {
   try {
     const response = await $fetch('http://localhost:3333/api/restaurants/search', {
@@ -280,7 +300,7 @@ export const updateRestaurantStatus = async (id: number, status: number) => {
     throw new Error('No authentication token found');
   }
 
-  console.log(`Updating restaurant status: ID=${id}, Status=${status}`); // Ajout de logs pour déboguer
+  console.log(`Updating restaurant status: ID=${id}, Status=${status}`);
 
   try {
     await $fetch(`http://localhost:3333/api/restaurants/update-status`, {
@@ -303,7 +323,7 @@ export const updateRestaurantRating = async (id: number, rating: number) => {
     throw new Error('No authentication token found');
   }
 
-  console.log(`Updating restaurant rating: ID=${id}, Rating=${rating}`); // Adding logs for debugging
+  console.log(`Updating restaurant rating: ID=${id}, Rating=${rating}`);
 
   try {
     await $fetch(`http://localhost:3333/api/restaurants/${id}/rating`, {
@@ -395,7 +415,7 @@ export const fetchReviewsByRestaurantId = async (restaurantId: number): Promise<
 
 export const addReview = async (restaurantId: number, review: Review) => {
   try {
-    const token = Cookies.get('authBR'); // Récupérer le token d'authentification depuis les cookies
+    const token = Cookies.get('authBR');
     if (!token) {
       throw new Error('No authentication token found');
     }
@@ -449,7 +469,7 @@ interface Booking {
 
 
 export const addBooking = async (booking: Booking) => {
-  const token = Cookies.get('authBR'); // Récupérer le token d'authentification depuis les cookies
+  const token = Cookies.get('authBR');
   if (!token) {
     throw new Error('No authentication token found');
   }
@@ -459,7 +479,7 @@ export const addBooking = async (booking: Booking) => {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'Authorization': `Bearer ${token}`, // Ajoutez l'en-tête Authorization
+        'Authorization': `Bearer ${token}`,
       },
       body: booking,
     });
@@ -549,6 +569,25 @@ export const updateBookingStatusByUser = async (id: number, status: number) => {
     return response;
   } catch (e) {
     console.error('Error updating booking status:', e);
+    throw e;
+  }
+};
+export const deleteBooking = async (id: number) => {
+  const token = Cookies.get('authBR');
+  if (!token) {
+    throw new Error('No authentication token found');
+  }
+
+  try {
+    await $fetch(`http://localhost:3333/api/bookings/${id}`, {
+      method: 'DELETE',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`,
+      },
+    });
+  } catch (e) {
+    console.error('Error deleting booking:', e);
     throw e;
   }
 };
