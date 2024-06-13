@@ -90,7 +90,6 @@ export const modifyUserProfile = async (firstName: string, lastName: string) => 
       throw new Error('No authentication token found');
     }
 
-    console.log('Sending PATCH request to modify user profile');
     const response = await $fetch('http://localhost:3333/api/profile/modify', {
       method: "PATCH",
       headers: {
@@ -100,7 +99,6 @@ export const modifyUserProfile = async (firstName: string, lastName: string) => 
       body: JSON.stringify({ first_name: firstName, last_name: lastName })
     });
 
-    console.log('Profile modified response:', response);
     return response;
   } catch (e) {
     console.error('Error modifying user profile:', e);
@@ -114,8 +112,6 @@ export const modifyUserPassword = async (currentPassword: string, newPassword: s
     if (!token) {
       throw new Error('No authentication token found');
     }
-
-    console.log(currentPassword);
     const response = await $fetch('http://localhost:3333/api/profile/modify/password', {
       method: "PATCH",
       headers: {
@@ -130,7 +126,6 @@ export const modifyUserPassword = async (currentPassword: string, newPassword: s
     });
     Cookies.remove("authBR")
     navigateTo("/auth/login")
-    console.log('Password modified response:', response);
     return response;
   } catch (e) {
     console.error('Error modifying user password:', e);
@@ -180,7 +175,6 @@ export const addRestaurant = async (restaurant: Object) => {
   }
 
   try {
-    console.log('Sending restaurant data to server:', JSON.stringify(restaurant, null, 2));
 
     const response = await $fetch('http://localhost:3333/api/restaurants/add', {
       method: 'POST',
@@ -190,7 +184,6 @@ export const addRestaurant = async (restaurant: Object) => {
         'Authorization': `Bearer ${token}`,
       },
     });
-    console.log('Response from server:', response);
     return response;
   } catch (e) {
     console.error('Error adding restaurant:', e);
@@ -213,7 +206,6 @@ export const modifyRestaurant = async (restaurant: object) => {
         'Authorization': `Bearer ${token}`,
       },
     });
-    console.log('Response from server:', response);
     return response;
   } catch (e) {
     console.error('Error modifying restaurant:', e);
@@ -248,7 +240,6 @@ export const deleteRestaurantByAdmin = async (id: number) => {
   }
 
   try {
-    console.log('test id : ' + id)
     await $fetch(`http://localhost:3333/api/admin/restaurants/delete/${id}`, {
       method: 'DELETE',
       headers: {
@@ -270,7 +261,6 @@ export const searchRestaurants = async (filter: Object) => {
       },
       body: filter
     });
-    console.log(response)
     return response;
   } catch (e) {
     console.error('Error fetching restaurants:', e);
@@ -300,8 +290,6 @@ export const updateRestaurantStatus = async (id: number, status: number) => {
     throw new Error('No authentication token found');
   }
 
-  console.log(`Updating restaurant status: ID=${id}, Status=${status}`);
-
   try {
     await $fetch(`http://localhost:3333/api/restaurants/update-status`, {
       method: 'PATCH',
@@ -322,8 +310,6 @@ export const updateRestaurantRating = async (id: number, rating: number) => {
   if (!token) {
     throw new Error('No authentication token found');
   }
-
-  console.log(`Updating restaurant rating: ID=${id}, Rating=${rating}`);
 
   try {
     await $fetch(`http://localhost:3333/api/restaurants/${id}/rating`, {
@@ -429,7 +415,6 @@ export const addReview = async (restaurantId: number, review: Review) => {
       body: review,
     });
 
-    console.log('Review added:', response);
     return response;
   } catch (e) {
     console.error('Error adding review:', e);
@@ -451,7 +436,6 @@ export const deleteReview = async (reviewId: number) => {
       },
     });
 
-    console.log('Review deleted:', response);
     return response;
   } catch (e) {
     console.error('Error deleting review:', e);
@@ -556,7 +540,6 @@ export const updateBookingStatusByUser = async (id: number, status: number) => {
   }
 
   try {
-    console.log(`Updating booking status for user. ID ${id}, Status ${status}`);
     const response = await $fetch(`http://localhost:3333/api/bookings/user/update-status`, {
       method: 'PATCH',
       headers: {
@@ -565,7 +548,7 @@ export const updateBookingStatusByUser = async (id: number, status: number) => {
       },
       body: { id, status },
     });
-    console.log('Booking status update response:', response);
+
     return response;
   } catch (e) {
     console.error('Error updating booking status:', e);

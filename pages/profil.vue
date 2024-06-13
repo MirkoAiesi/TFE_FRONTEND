@@ -26,7 +26,6 @@ const userInfo = ref({
 const loadUserInfo = async () => {
     try {
         const data = await fetchUserInfo();
-        console.log('Fetched user info:', data);
         userInfo.value = data;
     } catch (error) {
         console.error('Failed to load user info:', error);

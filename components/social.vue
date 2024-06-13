@@ -22,7 +22,6 @@ const updateSocialLinks = async () => {
             instagram: instagram.value,
             web: web.value
         });
-        console.log('Social links updated successfully');
     } catch (error) {
         console.error('Error updating social links:', error);
     }
@@ -33,7 +32,6 @@ onMounted(() => {
         facebook.value = restaurant.value.facebook || '';
         instagram.value = restaurant.value.instagram || '';
         web.value = restaurant.value.web || '';
-        console.log(`Restaurant ID: ${restaurant.value.id}`);
     } else {
         console.error('Restaurant is not set on mount');
     }

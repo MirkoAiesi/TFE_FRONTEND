@@ -20,7 +20,6 @@ function isValidPassword(password: string): boolean {
 
 async function onSubmit() {
   if (!state.birthday) {
-    console.log("La date de naissance n'est pas renseignée.");
     return;
   }
   const birthdayDate = parseISO(state.birthday);

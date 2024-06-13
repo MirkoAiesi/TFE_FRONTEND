@@ -31,7 +31,6 @@ const fetchRestaurantId = async () => {
 }
 
 const handleRemove: UploadProps['onRemove'] = async (uploadFile, uploadFiles) => {
-    console.log(uploadFile, uploadFiles)
     if (!restaurantId.value) {
         console.error('Restaurant ID is not available')
         return
@@ -41,7 +40,6 @@ const handleRemove: UploadProps['onRemove'] = async (uploadFile, uploadFiles) =>
         await $fetch(`http://localhost:3333/api/photos/${restaurantId.value}/${uploadFile.name}`, {
             method: 'DELETE',
         })
-        console.log('Photo deleted successfully')
     } catch (error) {
         console.error('Error deleting photo:', error)
     }
@@ -68,7 +66,6 @@ const handleUpload = async () => {
             method: 'POST',
             body: formData,
         })
-        console.log('Photos uploaded successfully')
     } catch (error) {
         console.error('Error uploading photos:', error)
     }

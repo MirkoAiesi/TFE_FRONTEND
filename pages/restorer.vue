@@ -131,8 +131,6 @@ const handleAddRestaurant = async () => {
         options: options,
     };
 
-    console.log('Sending restaurant data:', JSON.stringify(restaurant, null, 2));
-
     try {
         await addRestaurant(restaurant);
         dialogVisible.value = false;

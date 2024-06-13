@@ -17,7 +17,6 @@ export default async function () {
             },
         });
         if (response) {
-            console.log(response)
             return navigateTo('/managementRestorer')
 
         }

@@ -13,7 +13,6 @@ const confirmPassword = ref('');
 const loadUserInfo = async () => {
     try {
         const data = await fetchUserInfo();
-        console.log('Fetched user info:', data);
         firstName.value = data.firstName;
         lastName.value = data.lastName;
     } catch (error) {
@@ -22,10 +21,8 @@ const loadUserInfo = async () => {
 };
 
 const updateProfile = async () => {
-    console.log('updateProfile called');
     try {
         await modifyUserProfile(firstName.value, lastName.value);
-        console.log('Profile updated successfully');
         await loadUserInfo();
         eventBus.updatedProfile = { firstName: firstName.value, lastName: lastName.value };
     } catch (error) {
@@ -39,7 +36,6 @@ const isValidPassword = (password: string): boolean => {
 };
 
 const updatePassword = async () => {
-    console.log('updatePassword called');
     if (!isValidPassword(newPassword.value)) {
         ElMessage({
             type: 'error',
@@ -60,7 +56,6 @@ const updatePassword = async () => {
     }
     try {
         await modifyUserPassword(currentPassword.value, newPassword.value, confirmPassword.value);
-        console.log('Password updated successfully');
         ElMessage({
             type: 'success',
             message: 'Mot de passe modifié avec succès.',

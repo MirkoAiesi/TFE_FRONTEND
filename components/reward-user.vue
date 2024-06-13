@@ -7,7 +7,6 @@ const fidelity = ref(null)
 const loadUserInfo = async () => {
     try {
         const data = await fetchUserInfo();
-        console.log('Fetched user info:', data);
         fidelity.value = data.fidelity;
     } catch (error) {
         console.error('Failed to load user info:', error);

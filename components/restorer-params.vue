@@ -172,7 +172,6 @@ const modify = async () => {
             breakTime: isBreak.value ? breakTime.value : null,
             vacancyTime: vacancy.value ? vacancyTime.value : null,
         };
-        console.log('Sending data:', restaurantData);
 
         const response = await modifyRestaurant(restaurantData);
         console.log('Restaurant modified:', response);

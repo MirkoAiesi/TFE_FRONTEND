@@ -18,7 +18,6 @@ const openBurgerMenu = () => {
 };
 const reservationStore = useReservationStore();
 const pendingBookings = computed(() => reservationStore.pendingBookings);
-console.log(pendingBookings);
 onMounted(() => {
   reservationStore.fetchPendingBookings();
 });

@@ -30,7 +30,6 @@ const fetchData = async () => {
     try {
         const data = await fetchAllRestaurants();
         restaurants.value = data;
-        console.log('Fetched restaurants:', data);
     } catch (error) {
         console.error('Error fetching restaurants:', error);
     }
@@ -58,7 +57,6 @@ const popup = (restaurant: Restaurant) => {
 
 const confirmRestaurant = async (id: number) => {
     try {
-        console.log(`Confirming restaurant with ID: ${id}`);
         await updateRestaurantStatus(id, 1);
         fetchData();
         dialogVisible.value = false;
@@ -69,7 +67,6 @@ const confirmRestaurant = async (id: number) => {
 
 const rejectRestaurant = async (id: number) => {
     try {
-        console.log(`Rejecting restaurant with ID: ${id}`);
         await deleteRestaurantByAdmin(id);
         fetchData();
         dialogVisible.value = false;

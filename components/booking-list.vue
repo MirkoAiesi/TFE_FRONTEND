@@ -90,7 +90,6 @@ const popup = (booking: BookingInfo) => {
 
 const cancel = async () => {
     if (selectedBookingToCancel.value) {
-        console.log('Attempting to cancel booking with ID:', selectedBookingToCancel.value.id, 'for restaurant ID:', selectedBookingToCancel.value.restaurantId);
 
         try {
             const response = await updateBookingStatusByUser(selectedBookingToCancel.value.id, 2);

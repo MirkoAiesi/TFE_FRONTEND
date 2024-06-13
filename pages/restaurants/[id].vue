@@ -216,7 +216,6 @@ const submitReview = async () => {
 
         if (totalRating.value !== undefined && totalRating.value !== null) {
             await updateRestaurantRating(restaurantId, totalRating.value);
-            console.log(`Restaurant rating updated to ${totalRating.value}`);
         }
     } catch (e) {
         console.error('Error adding review:', e);
@@ -282,7 +281,6 @@ const handleSubmitBooking = async () => {
 
     try {
         await addBooking(booking);
-        console.log('Booking added successfully');
         dialogVisible.value = false;
     } catch (error) {
         console.error('Error adding booking:', error);
